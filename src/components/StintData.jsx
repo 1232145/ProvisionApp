@@ -25,19 +25,23 @@ const styles = {
         width: '50%',
         margin: '2.5% auto',
     },
+
     leftColumn: {
         padding: '20px',
     },
+
     rightColumn: {
         padding: '20px',
         textAlign: 'right',
     },
-    loginColumn: {
+
+    form: {
         display: 'flex',
         justifyContent: 'space-between',
         margin: '0 auto',
         maxWidth: '800px',
     },
+
     btnContainer: {
         display: 'flex',
         flexDirection: 'row',
@@ -45,12 +49,15 @@ const styles = {
         padding: '10px',
         marginBottom: '10px'
     },
+
     navigateBtn: {
         width: '30%'
     },
+
     saveBtn: {
         width: '20%',
     },
+
     fileInput: {
         width: '50%'
     }
@@ -346,7 +353,7 @@ function StintData() {
                         <>
                             <div style={styles.startStint}>
                                 <h1>Provision App</h1>
-                                <Row gutter={16} style={styles.loginColumn}>
+                                <Row gutter={16} style={styles.form}>
                                     <Col xs={24} md={12} style={styles.leftColumn}>
                                         <p>StintID: {stintID}</p>
                                         <p>Stint type: {stint.Stint_Type}</p>
@@ -372,7 +379,7 @@ function StintData() {
                                         </Button>
                                     </div>
                                     <div style={styles.saveBtn}>
-                                        <Button type="primary" style={{backgroundColor: 'green'}} onClick={handleSaveClick}>Save file</Button>
+                                        <Button type="primary" style={{ backgroundColor: 'green' }} onClick={handleSaveClick}>Save file</Button>
                                     </div>
                                     <div style={styles.fileInput}>
                                         <Input
@@ -386,7 +393,6 @@ function StintData() {
                                 <DataTable stint={stint} />
                             </div>
                         </>
-
                     )
                     :
                     (

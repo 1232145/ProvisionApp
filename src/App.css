@@ -3,13 +3,6 @@
   margin: 30px 50px;
 } */
 
-.start-stint {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-}
-
 .menu-container {
   border: 1px solid black;
   display: flex;
@@ -64,21 +57,9 @@
 .number-items input {
   width: 135px;
 }
-#item-btn{
+
+#item-btn {
   display: inline-block;
-}
-.left-column,
-.right-column {
-  padding: 20px;
-}
-
-.login-column {
-  display: flex;
-  justify-content: space-between;
-  margin: 0 auto;
-  max-width: 800px;
-  /* Add a max-width to limit the width of the container */
-
 }
 
 .left-column {
@@ -103,15 +84,15 @@
   align-items: center;
 }
 
-.feed_header button{
+.feed_header button {
   margin-right: auto;
 }
 
-.feed_header h1{
+.feed_header h1 {
   margin: 0;
   text-align: center;
   flex-grow: 1;
-  }
+}
 
 button,
 input[type="button"] {
@@ -153,10 +134,4 @@ input[type="button"] {
 #plot-noItem-btn {
   margin-left: 15px;
   margin-right: 15px;
-
 }
-
-
-
-
-
