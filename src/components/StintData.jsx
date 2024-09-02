@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { useState, useRef } from 'react';
-import { v4 as uuid } from 'uuid';
 import Island from './stintl/Island'
 import Species from './stintl/Species'
 import Name from './stintl/Name'
@@ -11,6 +10,51 @@ import Timer from './Timer';
 import Comment from './Comment';
 import { saveAs } from 'file-saver';
 import FeedingData from './FeedingData';
+import { Button, Input, Row, Col } from 'antd';
+
+const styles = {
+    startStint: {
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        border: '1px solid #d9d9d9',
+        padding: '30px',
+        borderRadius: '5px',
+        boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
+        width: '50%',
+        margin: '2.5% auto',
+    },
+    leftColumn: {
+        padding: '20px',
+    },
+    rightColumn: {
+        padding: '20px',
+        textAlign: 'right',
+    },
+    loginColumn: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        margin: '0 auto',
+        maxWidth: '800px',
+    },
+    btnContainer: {
+        display: 'flex',
+        flexDirection: 'row',
+        width: '80%',
+        padding: '10px',
+        marginBottom: '10px'
+    },
+    navigateBtn: {
+        width: '30%'
+    },
+    saveBtn: {
+        width: '20%',
+    },
+    fileInput: {
+        width: '50%'
+    }
+};
 
 function StintData() {
     //feeding data
@@ -33,7 +77,7 @@ function StintData() {
 
     //stint data
     const [stint, setStint] = useState({
-        StintID: uuid().slice(0, 8),
+        StintID: null,
         Stint_Type: "Chick Provisioning",
         Island: "",
         Species: "",
@@ -119,7 +163,7 @@ function StintData() {
      * @param {*} value 
      */
     const setComment = (value) => {
-        setStint({...stint, Comment: value});
+        setStint({ ...stint, Comment: value });
     }
 
     /**
@@ -296,68 +340,57 @@ function StintData() {
 
     return (
         <div>
-
             {
                 !isOpenF ?
                     (
                         <>
-                            <div className="start-stint">
-
-
-                                <h1>Start A Stint</h1>
-
-                                <div className="login-column">
-
-                                    <div className="left-column">
+                            <div style={styles.startStint}>
+                                <h1>Provision App</h1>
+                                <Row gutter={16} style={styles.loginColumn}>
+                                    <Col xs={24} md={12} style={styles.leftColumn}>
                                         <p>StintID: {stintID}</p>
                                         <p>Stint type: {stint.Stint_Type}</p>
                                         <p>Prey size method: {stint.Prey_Size_Method}</p>
                                         <p>Prey size reference: {stint.Prey_Size_Reference}</p>
                                         <Island setIsland={setIsland} data={stint.Island} />
                                         <Species setSpecies={setSpecies} data={stint.Species} />
-                                    </div>
-
-                                    <div className="right-column">
+                                    </Col>
+                                    <Col xs={24} md={12} style={styles.rightColumn}>
                                         <Name setName={setName} data={{ first: stint.FirstName, last: stint.LastName }} />
                                         <ObserverLocation setObs={setObserverLocation} data={stint.Observer_Location} />
                                         <Timer setArrive={setTimeArrive} setDepart={setTimeDepart} data={{ arrive: stint.Date_Time_Start, depart: stint.Date_Time_End }} />
-                                        <Comment setComment={setComment} data={stint.Comment}/>
+                                        <Comment setComment={setComment} data={stint.Comment} />
+                                    </Col>
+                                </Row>
+                                <div style={styles.btnContainer}>
+                                    <div style={styles.navigateBtn}>
+                                        <Button
+                                            type="primary"
+                                            onClick={() => setIsOpenF(!isOpenF)}
+                                        >
+                                            {!isOpenF ? 'Open Feeding' : 'Back to Stint'}
+                                        </Button>
                                     </div>
-
+                                    <div style={styles.saveBtn}>
+                                        <Button type="primary" style={{backgroundColor: 'green'}} onClick={handleSaveClick}>Save file</Button>
+                                    </div>
+                                    <div style={styles.fileInput}>
+                                        <Input
+                                            type="file"
+                                            ref={fileInput}
+                                            accept=".csv"
+                                            onChange={(e) => handleOpenClick(e)}
+                                        />
+                                    </div>
                                 </div>
-
-                                <div className="login-btn">
-                                    <button onClick={() => setIsOpenF(!isOpenF)}>
-                                        {
-                                            !isOpenF ? 'Open Feeding' : 'Back to Stint'
-                                        }
-                                    </button>
-
-                                    <button onClick={handleSaveClick}>Save file</button>
-
-
-                                    <input
-                                        type="file"
-                                        ref={fileInput}
-                                        accept=".csv"
-                                        onChange={(e) => handleOpenClick(e)}
-                                    />
-                                </div>
-
                                 <DataTable stint={stint} />
-
                             </div>
                         </>
+
                     )
                     :
                     (
-
                         <>
-                            {/* <button onClick={() => setIsOpenF(!isOpenF)}>
-                                {
-                                    !isOpenF ? 'Open Feeding' : 'Back to Stint'
-                                }
-                            </button> */}
                             <div>
                                 <FeedingData
                                     initialFeeding={initialFeeding}
@@ -365,7 +398,6 @@ function StintData() {
                                     feedings={stint.feedingData}
                                     isOpen={isOpenF}
                                     onToggle={() => setIsOpenF(!isOpenF)}
-
                                 />
                             </div>
                         </>
