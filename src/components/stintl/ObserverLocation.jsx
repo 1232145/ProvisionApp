@@ -1,7 +1,7 @@
 import React from 'react'
 import { useState } from 'react';
 
-function ObserverLocation({setObs, data}) {
+function ObserverLocation({ setObs, data, styles }) {
   const [input, setInput] = useState("");
 
   const handleChange = (e) => {
@@ -10,9 +10,10 @@ function ObserverLocation({setObs, data}) {
   }
 
   return (
-    <div>
-      <p>Observer location: {data}</p>
-      <input onChange={(e) => handleChange(e)} value={input} placeholder="Observer location" className="input-field"/>
+    <div style={styles.inputContainer}>
+      <p>Obs location:
+        <input onChange={(e) => handleChange(e)} value={input} placeholder="Observer location" style={styles.inputField} />
+      </p>
     </div>
   )
 }

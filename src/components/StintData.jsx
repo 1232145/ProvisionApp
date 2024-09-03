@@ -60,6 +60,18 @@ const styles = {
 
     fileInput: {
         width: '50%'
+    },
+
+    inputField: {
+        height: '3px',
+        width: '50%',
+        padding: '10px',
+        fontSize: '16px',
+        marginLeft: '10px',
+        fontSize: '90%'
+    },
+    inputContainer: {
+        width: '100%'
     }
 };
 
@@ -363,8 +375,8 @@ function StintData() {
                                         <Species setSpecies={setSpecies} data={stint.Species} />
                                     </Col>
                                     <Col xs={24} md={12} style={styles.rightColumn}>
-                                        <Name setName={setName} data={{ first: stint.FirstName, last: stint.LastName }} />
-                                        <ObserverLocation setObs={setObserverLocation} data={stint.Observer_Location} />
+                                        <Name setName={setName} data={{ first: stint.FirstName, last: stint.LastName }} styles={styles}/>
+                                        <ObserverLocation setObs={setObserverLocation} data={stint.Observer_Location} styles={styles}/>
                                         <Timer setArrive={setTimeArrive} setDepart={setTimeDepart} data={{ arrive: stint.Date_Time_Start, depart: stint.Date_Time_End }} />
                                         <Comment setComment={setComment} data={stint.Comment} />
                                     </Col>

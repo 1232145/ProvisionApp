@@ -1,19 +1,6 @@
 import React, { useState } from 'react';
 
-const styles = {
-  inputField: {
-    height: '3px',
-    width: '50%',
-    padding: '10px',
-    fontSize: '16px',
-    marginLeft: '10px',
-    fontSize: '90%'
-  },
-  inputContainer: {
-  }
-};
-
-function Name({ setName, data }) {
+function Name({ setName, data, styles }) {
   const [input, setInput] = useState({
     firstName: "",
     lastName: "",
