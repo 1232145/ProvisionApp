@@ -124,12 +124,6 @@ input[type="button"] {
   color: white;
 }
 
-
-.input-field {
-  height: 40px;
-  min-width: 180px;
-}
-
 /* Middle column oin Feeding that has plot and number of Items buttons */
 #plot-noItem-btn {
   margin-left: 15px;
