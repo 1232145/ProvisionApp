@@ -72,12 +72,6 @@
   text-align: right;
 }
 
-
-.time-button {
-  display: flex;
-  flex-direction: column;
-}
-
 .feed_header {
   display: flex;
   justify-content: space-between;

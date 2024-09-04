@@ -1,16 +1,17 @@
-import React from 'react'
-import Button from './Button'
+import React from 'react';
+import Button from './Button';
 
-function Timer({setArrive, setDepart, data}) {
+function Timer({ setTime, data, label, description, styles }) {
     return (
-        <div className="time-button">
-            <p>Time arrive: {data.arrive}</p>
-            <Button handleData={setArrive} value="Time arrive - Start" className="time-start"/>
-            
-            <p>Time depart: {data.depart}</p>
-            <Button handleData={setDepart} value="Time depart - End" className="time-end"/>
+        <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            marginTop: '10px',
+        }}>
+            <p style={styles.labelContainer}><span style={styles.label}>{label}:</span>{data}</p>
+            <Button handleData={setTime} value={description} />
         </div>
-    )
+    );
 }
 
-export default Timer
+export default Timer;
