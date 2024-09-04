@@ -11,13 +11,13 @@ function Island({ setIsland, data, styles }) {
 
   return (
     <div style={styles.inputContainer}>
-      <p><span style={styles.label}>Island:</span>
-        <input
+      <p style={styles.labelContainer}><span style={styles.label}>Island:</span></p>
+      <input
           onChange={(e) => handleChange(e)}
           value={input}
           placeholder="Island"
           style={styles.inputField}
-        /></p>
+        />
     </div>
   )
 }

@@ -13,26 +13,26 @@ function Name({ setName, data, styles }) {
   };
 
   return (
-    <div>
+    <>
       <div style={styles.inputContainer}>
-        <p><span style={styles.label}>First name:</span>
-          <input
+        <p style={styles.labelContainer}><span style={styles.label}>First name:</span></p>
+        <input
             onChange={(e) => handleChange(e, "first")}
             value={input.firstName}
             placeholder="First name"
             style={styles.inputField}
-          /></p>
+          />
       </div>
       <div style={styles.inputContainer}>
-        <p><span style={styles.label}>Last name:</span>
-          <input
+        <p style={styles.labelContainer}><span style={styles.label}>Last name:</span></p>
+        <input
             onChange={(e) => handleChange(e, "last")}
             value={input.lastName}
             placeholder="Last name"
             style={styles.inputField}
-          /></p>
+          />
       </div>
-    </div>
+    </>
   );
 }
 

@@ -24,58 +24,93 @@ const styles = {
         boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
         width: '50%',
         margin: '2.5% auto',
-    },
-
-    leftColumn: {
-        padding: '20px',
-    },
-
-    rightColumn: {
-        padding: '20px',
-        textAlign: 'right',
+        backgroundColor: '#f9f9f9',
+        maxWidth: '900px',
     },
 
     form: {
         display: 'flex',
+        flexWrap: 'wrap',
         justifyContent: 'space-between',
-        margin: '0 auto',
-        maxWidth: '800px',
+        gap: '20px',
+        width: '100%',
     },
 
-    btnContainer: {
+    header: {
+        marginBottom: '3.5%'
+    },
+
+    leftColumn: {
+        padding: '20px',
+        flex: '1',
+        textAlign: 'left',
+    },
+
+    fixedInfo: {
+        marginBottom: '3.5%'
+    },
+
+    rightColumn: {
+        padding: '7.5px',
+        flex: '1',
+        textAlign: 'right',
+    },
+
+    labelContainer: {
+        marginBottom: '10px',
         display: 'flex',
-        flexDirection: 'row',
-        width: '80%',
-        padding: '10px',
-        marginBottom: '10px'
-    },
-
-    navigateBtn: {
-        width: '30%'
-    },
-
-    saveBtn: {
-        width: '20%',
-    },
-
-    fileInput: {
-        width: '50%'
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '5px 0',
+        borderBottom: '1px solid #e0e0e0',
     },
 
     label: {
         fontWeight: 'bold',
+        fontSize: '14px',
+        color: '#333',
+        marginRight: '10px',
+    },
+
+    btnContainer: {
+        display: 'flex',
+        justifyContent: 'flex-start',
+        alignItems: 'center',
+        width: '100%',
+        marginTop: '20px',
+        gap: '10px',
+        padding: '10px 0',
+    },
+
+    navigateBtn: {
+        width: '25%',
+        backgroundColor: '#1890ff',
+        borderColor: '#1890ff',
+        color: 'white',
+        padding: '8px 16px',
+        borderRadius: '4px',
+        textAlign: 'center',
+    },
+
+    saveBtn: {
+        width: '25%',
+        backgroundColor: 'green',
+        borderColor: 'green',
+        color: 'white',
+        padding: '8px 16px',
+        borderRadius: '4px',
+        textAlign: 'center',
+    },
+
+    fileInput: {
+        width: '50%',
+        padding: '8px',
     },
 
     inputField: {
-        height: '3px',
-        width: '50%',
-        padding: '10px',
-        marginLeft: '10px',
-        fontSize: '90%'
+        width: '85%',
+        height: '25px'
     },
-    inputContainer: {
-        width: '100%'
-    }
 };
 
 function StintData() {
@@ -367,13 +402,23 @@ function StintData() {
                     (
                         <>
                             <div style={styles.startStint}>
-                                <h1>Provision App</h1>
+                                <h1 style={styles.header}>Provision App</h1>
                                 <Row gutter={16} style={styles.form}>
                                     <Col xs={24} md={12} style={styles.leftColumn}>
-                                        <p><span style={styles.label}>StintID:</span> {stintID}</p>
-                                        <p><span style={styles.label}>Stint type:</span> {stint.Stint_Type}</p>
-                                        <p><span style={styles.label}>Prey size method:</span> {stint.Prey_Size_Method}</p>
-                                        <p><span style={styles.label}>Prey size reference:</span> {stint.Prey_Size_Reference}</p>
+                                        <div style={styles.fixedInfo}>
+                                            <div style={styles.labelContainer}>
+                                                <span style={styles.label}>StintID:</span> {stintID}
+                                            </div>
+                                            <div style={styles.labelContainer}>
+                                                <span style={styles.label}>Stint type:</span> {stint.Stint_Type}
+                                            </div>
+                                            <div style={styles.labelContainer}>
+                                                <span style={styles.label}>Prey size method:</span> {stint.Prey_Size_Method}
+                                            </div>
+                                            <div style={styles.labelContainer}>
+                                                <span style={styles.label}>Prey size reference:</span> {stint.Prey_Size_Reference}
+                                            </div>
+                                        </div>
                                         <Island setIsland={setIsland} data={stint.Island} styles={styles} />
                                         <Species setSpecies={setSpecies} data={stint.Species} styles={styles} />
                                     </Col>
@@ -384,27 +429,32 @@ function StintData() {
                                         <Comment setComment={setComment} data={stint.Comment} />
                                     </Col>
                                 </Row>
+
+                                {/* Button and File Input */}
                                 <div style={styles.btnContainer}>
-                                    <div style={styles.navigateBtn}>
-                                        <Button
-                                            type="primary"
-                                            onClick={() => setIsOpenF(!isOpenF)}
-                                        >
-                                            {!isOpenF ? 'Open Feeding' : 'Back to Stint'}
-                                        </Button>
-                                    </div>
-                                    <div style={styles.saveBtn}>
-                                        <Button type="primary" style={{ backgroundColor: 'green' }} onClick={handleSaveClick}>Save file</Button>
-                                    </div>
-                                    <div style={styles.fileInput}>
-                                        <Input
-                                            type="file"
-                                            ref={fileInput}
-                                            accept=".csv"
-                                            onChange={(e) => handleOpenClick(e)}
-                                        />
-                                    </div>
+                                    <Button
+                                        type="primary"
+                                        style={styles.navigateBtn}
+                                        onClick={() => setIsOpenF(!isOpenF)}
+                                    >
+                                        {!isOpenF ? 'Open Feeding' : 'Back to Stint'}
+                                    </Button>
+                                    <Button
+                                        type="primary"
+                                        style={styles.saveBtn}
+                                        onClick={handleSaveClick}
+                                    >
+                                        Save file
+                                    </Button>
+                                    <Input
+                                        type="file"
+                                        ref={fileInput}
+                                        style={styles.fileInput}
+                                        accept=".csv"
+                                        onChange={(e) => handleOpenClick(e)}
+                                    />
                                 </div>
+
                                 <DataTable stint={stint} />
                             </div>
                         </>

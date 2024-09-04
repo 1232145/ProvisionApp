@@ -11,9 +11,8 @@ function ObserverLocation({ setObs, data, styles }) {
 
   return (
     <div style={styles.inputContainer}>
-      <p><span style={styles.label}>Obs location:</span>
-        <input onChange={(e) => handleChange(e)} value={input} placeholder="Observer location" style={styles.inputField} />
-      </p>
+      <p style={styles.labelContainer}><span style={styles.label}>Obs location:</span></p>
+      <input onChange={(e) => handleChange(e)} value={input} placeholder="Observer location" style={styles.inputField} />
     </div>
   )
 }
