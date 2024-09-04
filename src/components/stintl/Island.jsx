@@ -1,7 +1,7 @@
 import React from 'react'
 import { useState } from 'react'
 
-function Island({ setIsland, data }) {
+function Island({ setIsland, data, styles }) {
   const [input, setInput] = useState("");
 
   const handleChange = (e) => {
@@ -10,9 +10,14 @@ function Island({ setIsland, data }) {
   }
 
   return (
-    <div>
-      <p>Island: {data}</p>
-      <input className="input-field" onChange={(e) => handleChange(e)} value={input} placeholder="Island" />
+    <div style={styles.inputContainer}>
+      <p><span style={styles.label}>Island:</span>
+        <input
+          onChange={(e) => handleChange(e)}
+          value={input}
+          placeholder="Island"
+          style={styles.inputField}
+        /></p>
     </div>
   )
 }

@@ -2,7 +2,7 @@ import React from 'react'
 import Button from '../Button'
 import { useState } from 'react'
 
-function Species({setSpecies, data}) {
+function Species({ setSpecies, data, styles }) {
   const [input, setInput] = useState("");
 
   const handleChange = (e) => {
@@ -13,9 +13,9 @@ function Species({setSpecies, data}) {
   return (
     <div>
       <p>Species: {data}</p>
-      <Button handleData={setSpecies} value="ARTE" selected={data === "ARTE"}/>
-      <Button handleData={setSpecies} value="COTE" selected={data === "COTE"}/>
-      <input onChange={(e) => handleChange(e)} value={input} placeholder="Other" className="input-field"/>
+      <Button handleData={setSpecies} value="ARTE" selected={data === "ARTE"} />
+      <Button handleData={setSpecies} value="COTE" selected={data === "COTE"} />
+      <input onChange={(e) => handleChange(e)} value={input} placeholder="Other" className="input-field" />
     </div>
   )
 }

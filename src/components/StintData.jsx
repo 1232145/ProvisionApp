@@ -375,12 +375,12 @@ function StintData() {
                                         <p><span style={styles.label}>Stint type:</span> {stint.Stint_Type}</p>
                                         <p><span style={styles.label}>Prey size method:</span> {stint.Prey_Size_Method}</p>
                                         <p><span style={styles.label}>Prey size reference:</span> {stint.Prey_Size_Reference}</p>
-                                        <Island setIsland={setIsland} data={stint.Island} />
-                                        <Species setSpecies={setSpecies} data={stint.Species} />
+                                        <Island setIsland={setIsland} data={stint.Island} styles={styles} />
+                                        <Species setSpecies={setSpecies} data={stint.Species} styles={styles} />
                                     </Col>
                                     <Col xs={24} md={12} style={styles.rightColumn}>
-                                        <Name setName={setName} data={{ first: stint.FirstName, last: stint.LastName }} styles={styles}/>
-                                        <ObserverLocation setObs={setObserverLocation} data={stint.Observer_Location} styles={styles}/>
+                                        <Name setName={setName} data={{ first: stint.FirstName, last: stint.LastName }} styles={styles} />
+                                        <ObserverLocation setObs={setObserverLocation} data={stint.Observer_Location} styles={styles} />
                                         <Timer setArrive={setTimeArrive} setDepart={setTimeDepart} data={{ arrive: stint.Date_Time_Start, depart: stint.Date_Time_End }} />
                                         <Comment setComment={setComment} data={stint.Comment} />
                                     </Col>
