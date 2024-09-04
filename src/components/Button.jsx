@@ -1,39 +1,72 @@
 import React from 'react';
-import '../App.css';
+import { Button as AntButton, Select } from 'antd';
 
-function Button({ handleData, value, type, className, selected, dropdownValues }) {
+const { Option } = Select;
+
+const styles = {
+  button: {
+    fontSize: '90%',
+    marginBottom: '5%',
+  },
+  select: {
+    width: '100%',
+    height: '100%',
+    marginTop: '2.5%',
+    fontSize: '90%'
+  },
+  selectedBtn: {
+    backgroundColor: 'green',
+    color: 'white',
+  },
+};
+
+function Button({ handleData, value, type, selected, dropdownValues }) {
   // Clear Button
   if (value === "") {
     return (
-      <input
+      <AntButton
         onClick={() => handleData("")}
-        value="Clear"
-        type={type ? type : "button"}
-        className={className}
-        
-      />
+        type="default"
+        style={styles.button}
+      >
+        Clear
+      </AntButton>
     );
   }
 
   // Drop Down button
   if (value === "drop-down") {
     return (
-      <select style={{ height: "50px" }} value={selected} onChange={(e) => handleData(e.currentTarget.value)}>
-        <option value="">-- Select --</option>
+      <Select
+        style={styles.select}
+        value={selected || ""} // Set to empty string if selected is null/undefined
+        onChange={(value) => handleData(value)}
+        placeholder="-- Select --"
+        dropdownStyle={{ fontSize: '16px' }} // Customize dropdown menu style
+      >
+        <Option value="">-- Select --</Option>
         {dropdownValues.map((option, index) => (
-          <option key={index} value={option}>{option}</option>
+          //Note: option of dropdown not highlight
+          <Option key={index} value={option} style={{ ...(selected ? styles.selectedBtn : {})}}>
+            {option}
+          </Option>
         ))}
-      </select>
+      </Select>
     );
   }
 
   return (
-    <input
+    <AntButton
       onClick={(e) => handleData(e.currentTarget.value)}
+      type={type ? type : "default"}
+      style={{
+        ...styles.button,
+        ...(selected ? styles.selectedBtn : {}),
+      }}
       value={value}
-      type={type ? type : "button"}
-      className={`${className} ${selected ? "selected-btn" : ""}`}
-    />
+    >
+      {value}
+    </AntButton>
   );
 }
 

@@ -94,14 +94,6 @@
   flex-grow: 1;
 }
 
-button,
-input[type="button"] {
-  padding: 10px 20px;
-  /* Set the padding to the desired size */
-  font-size: 16px;
-  /* Set the font size to the desired size */
-}
-
 .display-buttons {
   display: flex;
   align-items: flex-end;
@@ -111,12 +103,6 @@ input[type="button"] {
 
 .display-buttons .displayM {
   width: 150px;
-}
-
-/* If btn is clicked, the background turns Green */
-.selected-btn {
-  background-color: green;
-  color: white;
 }
 
 .closed_feeding {
