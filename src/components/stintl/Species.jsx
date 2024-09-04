@@ -12,10 +12,13 @@ function Species({ setSpecies, data, styles }) {
 
   return (
     <div>
-      <p>Species: {data}</p>
-      <Button handleData={setSpecies} value="ARTE" selected={data === "ARTE"} />
-      <Button handleData={setSpecies} value="COTE" selected={data === "COTE"} />
-      <input onChange={(e) => handleChange(e)} value={input} placeholder="Other" className="input-field" />
+      <p style={styles.labelContainer}><span style={styles.label}>Species:</span></p>
+      <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'left' }}>
+        <Button handleData={setSpecies} value="ARTE" selected={data === "ARTE"} />
+        <div style={{margin: '0px 2.5px'}} />
+        <Button handleData={setSpecies} value="COTE" selected={data === "COTE"} />
+      </div>
+      <input onChange={(e) => handleChange(e)} value={input} placeholder="Other" style={styles.inputField} />
     </div>
   )
 }
