@@ -15,7 +15,7 @@ function Name({ setName, data, styles }) {
   return (
     <div>
       <div style={styles.inputContainer}>
-        <p>First name:
+        <p><span style={styles.label}>First name:</span>
           <input
             onChange={(e) => handleChange(e, "first")}
             value={input.firstName}
@@ -24,7 +24,7 @@ function Name({ setName, data, styles }) {
           /></p>
       </div>
       <div style={styles.inputContainer}>
-        <p>Last name:
+        <p><span style={styles.label}>Last name:</span>
           <input
             onChange={(e) => handleChange(e, "last")}
             value={input.lastName}

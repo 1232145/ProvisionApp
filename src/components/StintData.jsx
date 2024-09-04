@@ -62,6 +62,10 @@ const styles = {
         width: '50%'
     },
 
+    label: {
+        fontWeight: 'bold',
+    },
+
     inputField: {
         height: '3px',
         width: '50%',
@@ -367,10 +371,10 @@ function StintData() {
                                 <h1>Provision App</h1>
                                 <Row gutter={16} style={styles.form}>
                                     <Col xs={24} md={12} style={styles.leftColumn}>
-                                        <p>StintID: {stintID}</p>
-                                        <p>Stint type: {stint.Stint_Type}</p>
-                                        <p>Prey size method: {stint.Prey_Size_Method}</p>
-                                        <p>Prey size reference: {stint.Prey_Size_Reference}</p>
+                                        <p><span style={styles.label}>StintID:</span> {stintID}</p>
+                                        <p><span style={styles.label}>Stint type:</span> {stint.Stint_Type}</p>
+                                        <p><span style={styles.label}>Prey size method:</span> {stint.Prey_Size_Method}</p>
+                                        <p><span style={styles.label}>Prey size reference:</span> {stint.Prey_Size_Reference}</p>
                                         <Island setIsland={setIsland} data={stint.Island} />
                                         <Species setSpecies={setSpecies} data={stint.Species} />
                                     </Col>
