@@ -223,6 +223,16 @@ function StintData() {
         setStint({ ...stint, Comment: value });
     }
 
+    const simpleHash = (input) => {
+        let hash = 0;
+        for (let i = 0; i < input.length; i++) {
+            const char = input.charCodeAt(i);
+            hash = (hash << 5) - hash + char;
+            hash |= 0; // Convert to 32bit integer
+        }
+        return hash.toString(36); // Convert to base-36 for shorter representation
+    };
+
     /**
      * Converts json data to a string representation of csv
      * @param {*} json 
@@ -407,7 +417,7 @@ function StintData() {
                                     <Col xs={24} md={12} style={styles.leftColumn}>
                                         <div style={styles.fixedInfo}>
                                             <div style={styles.labelContainer}>
-                                                <span style={styles.label}>StintID:</span> {stintID}
+                                                <span style={styles.label}>StintID:</span>{simpleHash(stintID)}
                                             </div>
                                             <div style={styles.labelContainer}>
                                                 <span style={styles.label}>Stint type:</span> {stint.Stint_Type}
@@ -475,7 +485,7 @@ function StintData() {
                         </>
                     )
             }
-        </div>
+        </div >
     )
 }
 
