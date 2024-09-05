@@ -11,8 +11,59 @@ import Comment from './Comment';
 import './ToggleBtn.css'
 import { useState, useEffect } from 'react';
 import React from 'react';
+import { Button, Input, Checkbox } from 'antd';  // Import Ant Design components
 
 function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, styles }) {
+    styles = {
+        ...styles,
+        outerContainer: {
+            border: '1px solid black',
+            margin: '30px 50px',
+            padding: '20px',
+            borderRadius: '8px',
+        },
+        menuContainer: {
+            border: '1px solid black',
+            display: 'flex',
+            flexDirection: 'row',
+            flexWrap: 'wrap',  // Allow wrapping for smaller screens
+            justifyContent: 'space-around',
+            padding: '20px',
+            gap: '20px',  // Add spacing between columns
+        },
+        stintlContainer: {
+            border: '1px solid black',
+            display: 'flex',
+            flexDirection: 'row',
+            flexWrap: 'wrap',  // Allow wrapping for smaller screens
+            justifyContent: 'space-evenly',
+            padding: '20px',
+            gap: '20px',  // Add spacing between components
+        },
+        plotNoItemBtn: {
+            marginLeft: '15px',
+            marginRight: '15px',
+        },
+        flexRowCenter: {
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+        },
+        feedHeader: {
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',  // Make header responsive
+        },
+        selectedBtn: {
+            backgroundColor: 'green',
+            color: 'white',
+        },
+        closedFeeding: {
+            backgroundColor: 'blue',
+            color: 'white',
+        },
+    }
 
     /**
      * this stores and handles input feeding data
@@ -280,63 +331,62 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, 
 
     return (
         <>
-            <div className="outer-container">
-
-                <div className="feed_header">
+            <div style={styles.outerContainer}>
+                <div style={styles.feedHeader}>
                     {isOpen && (
-                        <button onClick={onToggle}>
+                        <Button type="primary" onClick={onToggle}>
                             Back to Stint
-                        </button>
+                        </Button>
                     )}
-                    <h1>Feeding {index + 1}</h1>
+                    <h1 style={{
+                        margin: '0',
+                        textAlign: 'center',
+                        flexGrow: '1'
+                    }}>Feeding {index + 1}</h1>
                 </div>
-                <div className="menu-container">
+
+                <div style={styles.menuContainer}>
                     <Timer setTime={setTimeArrive} data={feeding.Time_Arrive} label="Time start" description="Time start" styles={styles} />
                     <Timer setTime={setTimeDepart} data={feeding.Time_Depart} label="Time depart" description="Time depart" styles={styles} />
 
-                    <div id='plot-noItem-btn'>
-
+                    <div style={styles.plotNoItemBtn}>
                         <Plot setPlot={setPlot} data={feeding.Plot_Status} />
                         <NumberItems setNumberItems={setNumberItems} data={feeding.Number_of_Items} changeIndex={setNIndex} nIndex={nIndex} />
                     </div>
 
                     <div>
-                        <div style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
+                        <div style={styles.flexRowCenter}>
                             <p>Show Closed Feeding:</p>
-
-                            <button onClick={toggleClosedFeeding} className="toggle">
-                                <input type="checkbox" checked={isClosedFeedingShown} />
-                                <span className="toggle-slider"></span>
-                                <span className="toggle-label">{isClosedFeedingShown ? "On" : "Off"}</span>
-                            </button>
+                            <Checkbox checked={isClosedFeedingShown} onChange={toggleClosedFeeding} />
+                            <span style={{ marginLeft: '8px' }}>{isClosedFeedingShown ? "On" : "Off"}</span>
                         </div>
-                        {
-                            feedings.map((item, i) => {
-                                if (closedIndex.includes(i) && !displayClosed) {
-                                    return null;
-                                }
+                        {feedings.map((item, i) => {
+                            if (closedIndex.includes(i) && !displayClosed) {
+                                return null;
+                            }
 
-                                const value = `Feeding ${i + 1}` + (item.Nest !== "" ? `: ${item.Nest}` : "");
+                            const value = `Feeding ${i + 1}` + (item.Nest !== "" ? `: ${item.Nest}` : "");
 
-                                return (
-                                    <input key={i} value={value} type="button"
-                                        onClick={() => handleOpenFeeding(i)}
-                                        className={index === i ? "selected-btn" : ""}
-                                    />
-                                )
-                            })
-                        }
+                            return (
+                                <Input
+                                    key={i}
+                                    value={value}
+                                    type="button"
+                                    onClick={() => handleOpenFeeding(i)}
+                                    style={index === i ? styles.selectedBtn : { marginBottom: '8px' }}
+                                />
+                            );
+                        })}
 
                         <div>
-                            <button onClick={() => handleNewFeeding()}>New</button>
-                            <button onClick={() => handleDeleteFeeding()}>Delete</button>
-                            <button onClick={() => handleCloseFeeding(index)}>Close</button>
+                            <Button type="primary" onClick={handleNewFeeding} style={{ marginRight: '8px' }}>New</Button>
+                            <Button type="default" onClick={handleDeleteFeeding} style={{ marginRight: '8px' }}>Delete</Button>
+                            <Button type="dashed" onClick={() => handleCloseFeeding(index)}>Close</Button>
                         </div>
                     </div>
                 </div>
 
-                <div className="stintl-container">
-
+                <div style={styles.stintlContainer}>
                     <Nest setNest={setNest} data={feeding.Nest} />
                     <Provider setProvider={setProvider} data={feeding.Provider} />
                     <Recipient setRecipient={setRecipient} data={feeding.Number_of_Items[nIndex].Recipient} />

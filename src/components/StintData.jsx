@@ -465,7 +465,7 @@ function StintData() {
                                         onChange={(e) => handleOpenClick(e)}
                                     />
                                 </div>
-                                <div style={{maxWidth: '100%', overflowX: 'auto'}}>
+                                <div style={{ maxWidth: '100%', overflowX: 'auto' }}>
                                     <DataTable stint={stint} />
                                 </div>
                             </div>

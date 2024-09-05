@@ -1,26 +1,3 @@
-/* .outer-container {
-  border: 1px solid black;
-  margin: 30px 50px;
-} */
-
-.menu-container {
-  border: 1px solid black;
-  display: flex;
-  flex-direction: row;
-  height: auto;
-  margin: 30px 50px;
-  justify-content: space-around;
-}
-
-.stintl-container {
-  border: 1px solid black;
-  display: flex;
-  flex-direction: row;
-  height: auto;
-  margin: 30px 50px;
-  justify-content: space-evenly;
-}
-
 .box-items {
   display: flex;
   flex-direction: column;
@@ -72,22 +49,6 @@
   text-align: right;
 }
 
-.feed_header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.feed_header button {
-  margin-right: auto;
-}
-
-.feed_header h1 {
-  margin: 0;
-  text-align: center;
-  flex-grow: 1;
-}
-
 .display-buttons {
   display: flex;
   align-items: flex-end;
@@ -97,15 +58,4 @@
 
 .display-buttons .displayM {
   width: 150px;
-}
-
-.closed_feeding {
-  background-color: blue;
-  color: white;
-}
-
-/* Middle column oin Feeding that has plot and number of Items buttons */
-#plot-noItem-btn {
-  margin-left: 15px;
-  margin-right: 15px;
 }
