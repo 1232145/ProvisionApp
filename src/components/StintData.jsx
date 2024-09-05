@@ -431,13 +431,13 @@ function StintData() {
                                         </div>
                                         <Island setIsland={setIsland} data={stint.Island} styles={styles} />
                                         <Species setSpecies={setSpecies} data={stint.Species} styles={styles} />
+                                        <Comment setComment={setComment} data={stint.Comment} styles={styles} />
                                     </Col>
                                     <Col xs={24} md={12} style={styles.rightColumn}>
                                         <Name setName={setName} data={{ first: stint.FirstName, last: stint.LastName }} styles={styles} />
                                         <ObserverLocation setObs={setObserverLocation} data={stint.Observer_Location} styles={styles} />
                                         <Timer setTime={setTimeArrive} data={stint.Date_Time_Start} label="Time start" description="Time start" styles={styles} />
                                         <Timer setTime={setTimeDepart} data={stint.Date_Time_End} label="Time depart" description="Time depart" styles={styles} />
-                                        <Comment setComment={setComment} data={stint.Comment} />
                                     </Col>
                                 </Row>
 
@@ -465,8 +465,9 @@ function StintData() {
                                         onChange={(e) => handleOpenClick(e)}
                                     />
                                 </div>
-
-                                <DataTable stint={stint} />
+                                <div style={{maxWidth: '100%', overflowX: 'auto'}}>
+                                    <DataTable stint={stint} />
+                                </div>
                             </div>
                         </>
                     )
@@ -480,6 +481,7 @@ function StintData() {
                                     feedings={stint.feedingData}
                                     isOpen={isOpenF}
                                     onToggle={() => setIsOpenF(!isOpenF)}
+                                    styles={styles}
                                 />
                             </div>
                         </>

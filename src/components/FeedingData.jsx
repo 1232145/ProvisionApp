@@ -12,7 +12,7 @@ import './ToggleBtn.css'
 import { useState, useEffect } from 'react';
 import React from 'react';
 
-function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle }) {
+function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, styles }) {
 
     /**
      * this stores and handles input feeding data
@@ -125,7 +125,7 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle }
      * 
      */
     const setComment = (value) => {
-        setFeeding({...feeding, Comment: value});
+        setFeeding({ ...feeding, Comment: value });
     }
 
     /**
@@ -220,7 +220,7 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle }
             if (field === 'Comment') {
                 continue; // Skip checking if the field is "Comment"
             }
-        
+
             const value = feedingTemp[field];
             if (Array.isArray(value)) {
                 // If the field is a list, loop through each item
@@ -282,19 +282,17 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle }
         <>
             <div className="outer-container">
 
-                <div  className="feed_header">
+                <div className="feed_header">
                     {isOpen && (
                         <button onClick={onToggle}>
                             Back to Stint
                         </button>
                     )}
                     <h1>Feeding {index + 1}</h1>
-
                 </div>
-
-
                 <div className="menu-container">
-                    <Timer setArrive={setTimeArrive} setDepart={setTimeDepart} data={{ arrive: feeding.Time_Arrive, depart: feeding.Time_Depart }} />
+                    <Timer setTime={setTimeArrive} data={feeding.Time_Arrive} label="Time start" description="Time start" styles={styles} />
+                    <Timer setTime={setTimeDepart} data={feeding.Time_Depart} label="Time depart" description="Time depart" styles={styles} />
 
                     <div id='plot-noItem-btn'>
 
@@ -347,7 +345,7 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle }
                 </div>
 
                 <div>
-                    <Comment setComment={setComment} data={feeding.Comment} />
+                    <Comment setComment={setComment} data={feeding.Comment} styles={styles} />
                 </div>
             </div>
         </>
