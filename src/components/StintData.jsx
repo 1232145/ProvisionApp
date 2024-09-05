@@ -335,7 +335,7 @@ function StintData() {
     const handleSaveClick = () => {
         let csv = '';
         let data = stint;
-        data.StintID = stintID;
+        data.StintID = simpleHash(stintID);
         const emptyFields = [];
         const excludeKey = ["Comment"]; //this can be missing in data
 
