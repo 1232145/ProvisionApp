@@ -3,10 +3,8 @@ import Button from '../Button'
 import { useState } from 'react'
 
 function Species({ setSpecies, data, styles }) {
-  const [input, setInput] = useState("");
 
   const handleChange = (e) => {
-    setInput(e.currentTarget.value);
     setSpecies(e.currentTarget.value);
   }
 
@@ -18,7 +16,7 @@ function Species({ setSpecies, data, styles }) {
         <div style={{margin: '0px 2.5px'}} />
         <Button handleData={setSpecies} value="COTE" selected={data === "COTE"} />
       </div>
-      <input onChange={(e) => handleChange(e)} value={input} placeholder="Other" style={styles.inputField} />
+      <input onChange={(e) => handleChange(e)} value={data} placeholder="Other" style={styles.inputField} />
     </div>
   )
 }

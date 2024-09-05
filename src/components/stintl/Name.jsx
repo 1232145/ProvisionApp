@@ -1,15 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 function Name({ setName, data, styles }) {
-  const [input, setInput] = useState({
-    firstName: "",
-    lastName: "",
-  });
-
   const handleChange = (e, type) => {
-    const val = e.currentTarget.value;
-    type === "first" ? setInput({ ...input, firstName: val }) : setInput({ ...input, lastName: val });
-    setName(val, type);
+    setName(e.currentTarget.value, type);
   };
 
   return (
@@ -18,7 +11,7 @@ function Name({ setName, data, styles }) {
         <p style={styles.labelContainer}><span style={styles.label}>First name:</span></p>
         <input
             onChange={(e) => handleChange(e, "first")}
-            value={input.firstName}
+            value={data.firstName}
             placeholder="First name"
             style={styles.inputField}
           />
@@ -27,7 +20,7 @@ function Name({ setName, data, styles }) {
         <p style={styles.labelContainer}><span style={styles.label}>Last name:</span></p>
         <input
             onChange={(e) => handleChange(e, "last")}
-            value={input.lastName}
+            value={data.lastName}
             placeholder="Last name"
             style={styles.inputField}
           />

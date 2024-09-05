@@ -434,7 +434,7 @@ function StintData() {
                                         <Comment setComment={setComment} data={stint.Comment} styles={styles} />
                                     </Col>
                                     <Col xs={24} md={12} style={styles.rightColumn}>
-                                        <Name setName={setName} data={{ first: stint.FirstName, last: stint.LastName }} styles={styles} />
+                                        <Name setName={setName} data={{ firstName: stint.FirstName, lastName: stint.LastName }} styles={styles} />
                                         <ObserverLocation setObs={setObserverLocation} data={stint.Observer_Location} styles={styles} />
                                         <Timer setTime={setTimeArrive} data={stint.Date_Time_Start} label="Time start" description="Time start" styles={styles} />
                                         <Timer setTime={setTimeDepart} data={stint.Date_Time_End} label="Time depart" description="Time depart" styles={styles} />
