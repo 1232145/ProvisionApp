@@ -17,12 +17,14 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, 
     styles = {
         ...styles,
         outerContainer: {
-            border: '1px solid black',
+            border: '1px solid #d9d9d9',
             margin: '30px 50px',
             padding: '20px',
-            borderRadius: '8px',
+            borderRadius: '5px',
+            boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
+            backgroundColor: '#f9f9f9',
         },
-        menuContainer: {
+        upperMenuContainer: {
             border: '1px solid black',
             display: 'flex',
             flexDirection: 'row',
@@ -30,6 +32,10 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, 
             justifyContent: 'space-around',
             padding: '20px',
             gap: '20px',  // Add spacing between columns
+            borderBottom: 'none'
+        },
+        lowerMenuContainer: {
+
         },
         stintlContainer: {
             border: '1px solid black',
@@ -39,6 +45,12 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, 
             justifyContent: 'space-evenly',
             padding: '20px',
             gap: '20px',  // Add spacing between components
+        },
+        timerBtnContainer: {
+            display: 'flex',
+            flexDirection: 'row',
+            justifyContent: 'space-around',
+            width: '30%'
         },
         plotNoItemBtn: {
             marginLeft: '15px',
@@ -63,6 +75,10 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, 
             backgroundColor: 'blue',
             color: 'white',
         },
+        headContainer: {
+            display: 'flex',
+            flexDirection: 'column',
+        }
     }
 
     /**
@@ -345,43 +361,51 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, 
                     }}>Feeding {index + 1}</h1>
                 </div>
 
-                <div style={styles.menuContainer}>
-                    <Timer setTime={setTimeArrive} data={feeding.Time_Arrive} label="Time start" description="Time start" styles={styles} />
-                    <Timer setTime={setTimeDepart} data={feeding.Time_Depart} label="Time depart" description="Time depart" styles={styles} />
-
-                    <div style={styles.plotNoItemBtn}>
-                        <Plot setPlot={setPlot} data={feeding.Plot_Status} />
-                        <NumberItems setNumberItems={setNumberItems} data={feeding.Number_of_Items} changeIndex={setNIndex} nIndex={nIndex} />
-                    </div>
-
-                    <div>
-                        <div style={styles.flexRowCenter}>
-                            <p>Show Closed Feeding:</p>
-                            <Checkbox checked={isClosedFeedingShown} onChange={toggleClosedFeeding} />
-                            <span style={{ marginLeft: '8px' }}>{isClosedFeedingShown ? "On" : "Off"}</span>
+                <div style={styles.headContainer}>
+                    <div style={styles.upperMenuContainer}>
+                        <div style={styles.timerBtnContainer}>
+                            <Timer setTime={setTimeArrive} data={feeding.Time_Arrive} label="Time start" description="Time start" styles={styles} />
+                            <Timer setTime={setTimeDepart} data={feeding.Time_Depart} label="Time depart" description="Time depart" styles={styles} />
                         </div>
-                        {feedings.map((item, i) => {
-                            if (closedIndex.includes(i) && !displayClosed) {
-                                return null;
-                            }
 
-                            const value = `Feeding ${i + 1}` + (item.Nest !== "" ? `: ${item.Nest}` : "");
-
-                            return (
-                                <Input
-                                    key={i}
-                                    value={value}
-                                    type="button"
-                                    onClick={() => handleOpenFeeding(i)}
-                                    style={index === i ? styles.selectedBtn : { marginBottom: '8px' }}
-                                />
-                            );
-                        })}
+                        <div style={styles.plotNoItemBtn}>
+                            <Plot setPlot={setPlot} data={feeding.Plot_Status} />
+                        </div>
+                    </div>
+                    <div style={{ ...styles.upperMenuContainer, ...styles.lowerMenuContainer }}>
+                        <div>
+                            <NumberItems setNumberItems={setNumberItems} data={feeding.Number_of_Items} changeIndex={setNIndex} nIndex={nIndex} styles={styles} />
+                        </div>
 
                         <div>
-                            <Button type="primary" onClick={handleNewFeeding} style={{ marginRight: '8px' }}>New</Button>
-                            <Button type="default" onClick={handleDeleteFeeding} style={{ marginRight: '8px' }}>Delete</Button>
-                            <Button type="dashed" onClick={() => handleCloseFeeding(index)}>Close</Button>
+                            <div style={styles.flexRowCenter}>
+                                <p>Show Closed Feeding:</p>
+                                <Checkbox checked={isClosedFeedingShown} onChange={toggleClosedFeeding} />
+                                <span style={{ marginLeft: '8px' }}>{isClosedFeedingShown ? "On" : "Off"}</span>
+                            </div>
+                            {feedings.map((item, i) => {
+                                if (closedIndex.includes(i) && !displayClosed) {
+                                    return null;
+                                }
+
+                                const value = `Feeding ${i + 1}` + (item.Nest !== "" ? `: ${item.Nest}` : "");
+
+                                return (
+                                    <Input
+                                        key={i}
+                                        value={value}
+                                        type="button"
+                                        onClick={() => handleOpenFeeding(i)}
+                                        style={index === i ? styles.selectedBtn : { marginBottom: '8px' }}
+                                    />
+                                );
+                            })}
+
+                            <div>
+                                <Button type="primary" onClick={handleNewFeeding} style={{ marginRight: '8px' }}>New</Button>
+                                <Button type="default" onClick={handleDeleteFeeding} style={{ marginRight: '8px' }}>Delete</Button>
+                                <Button type="dashed" onClick={() => handleCloseFeeding(index)}>Close</Button>
+                            </div>
                         </div>
                     </div>
                 </div>
