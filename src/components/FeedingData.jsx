@@ -56,16 +56,37 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, 
             marginLeft: '15px',
             marginRight: '15px',
         },
+        feedingsContainer: {
+            display: 'flex',
+            flexDirection: 'column',
+            width: '550px',
+            height: '200px',
+            margin: '12.5px',
+            border: '1px solid black',
+            justifyContent: 'space-between',
+            padding: '12px',
+        },
+        feedingItemListContainer: {
+            flexGrow: 1,
+            overflowY: 'auto', // Enable vertical scrolling if needed
+            display: 'flex',
+            flexDirection: 'row', // Align buttons in a row
+            flexWrap: 'wrap',     // Allow buttons to wrap when there is no more space
+            gap: '5px',          // Add some spacing between buttons
+            alignItems: 'flex-start', // Align items to the top
+        },
         flexRowCenter: {
             display: 'flex',
             flexDirection: 'row',
             alignItems: 'center',
+            flexWrap: 'wrap',  // Add this to allow wrapping
         },
         feedHeader: {
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            flexWrap: 'wrap',  // Make header responsive
+            flexWrap: 'wrap',
+            marginBottom: '12.5px'
         },
         selectedBtn: {
             backgroundColor: 'green',
@@ -377,36 +398,46 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, 
                             <NumberItems setNumberItems={setNumberItems} data={feeding.Number_of_Items} changeIndex={setNIndex} nIndex={nIndex} styles={styles} />
                         </div>
 
-                        <div>
-                            <div style={styles.flexRowCenter}>
-                                <p>Show Closed Feeding:</p>
-                                <Checkbox checked={isClosedFeedingShown} onChange={toggleClosedFeeding} />
-                                <span style={{ marginLeft: '8px' }}>{isClosedFeedingShown ? "On" : "Off"}</span>
-                            </div>
-                            {feedings.map((item, i) => {
-                                if (closedIndex.includes(i) && !displayClosed) {
-                                    return null;
-                                }
+                        <div style={styles.feedingsList}>
+                            <div style={styles.feedingsContainer}>
+                                <div style={styles.flexRowCenter}>
+                                    <p style={{marginRight: '7.5px'}}>Show Closed Feeding:</p>
+                                    <Checkbox checked={isClosedFeedingShown} onChange={toggleClosedFeeding} />
+                                </div>
 
-                                const value = `Feeding ${i + 1}` + (item.Nest !== "" ? `: ${item.Nest}` : "");
+                                <div style={styles.feedingItemListContainer}>
+                                    {feedings.map((item, i) => {
+                                        if (closedIndex.includes(i) && !displayClosed) {
+                                            return null;
+                                        }
 
-                                return (
-                                    <Input
-                                        key={i}
-                                        value={value}
-                                        type="button"
-                                        onClick={() => handleOpenFeeding(i)}
-                                        style={index === i ? styles.selectedBtn : { marginBottom: '8px' }}
-                                    />
-                                );
-                            })}
+                                        const value = `Feeding ${i + 1}` + (item.Nest !== "" ? `: ${item.Nest}` : "");
 
-                            <div>
-                                <Button type="primary" onClick={handleNewFeeding} style={{ marginRight: '8px' }}>New</Button>
-                                <Button type="default" onClick={handleDeleteFeeding} style={{ marginRight: '8px' }}>Delete</Button>
-                                <Button type="dashed" onClick={() => handleCloseFeeding(index)}>Close</Button>
+                                        return (
+                                            <Input
+                                                key={i}
+                                                value={value}
+                                                type="button"
+                                                onClick={() => handleOpenFeeding(i)}
+                                                style={{
+                                                    ...(index === i ? styles.selectedBtn : { marginBottom: '8px' }),
+                                                    width: 'auto',
+                                                    flexGrow: 1, // Ensure buttons grow
+                                                    minWidth: '150px', // Ensure a min width for wrapping
+                                                }}
+                                            />
+                                        );
+                                    })}
+                                </div>
+
+                                <div style={{...styles.flexRowCenter, marginTop: '12.5px'}}>
+                                    <Button type="primary" onClick={handleNewFeeding} style={{ marginRight: '8px' }}>New</Button>
+                                    <Button type="default" onClick={handleDeleteFeeding} style={{ marginRight: '8px' }}>Delete</Button>
+                                    <Button type="dashed" onClick={() => handleCloseFeeding(index)}>Close</Button>
+                                </div>
                             </div>
                         </div>
+
                     </div>
                 </div>
 

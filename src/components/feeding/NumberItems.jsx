@@ -1,28 +1,14 @@
 import React from 'react'
 import { Button, Space, Row, Col, Modal, message } from 'antd';
-import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 
 function NumberItems({ data, changeIndex, nIndex, setNumberItems, styles }) {
     styles = {
         ...styles,
         numberItemsContainer: {
-            display: 'flex',
-            flexDirection: 'column',
-            width: '500px',
-            height: '150px',
-            margin: '12.5px',
-            border: '1px solid black',
-            justifyContent: 'space-between',
-            padding: '0px 10px',
+            ...styles.feedingsContainer,
         },
         itemsListContainer: {
-            flexGrow: 1,
-            overflowY: 'auto', // Enable vertical scrolling if needed
-            display: 'flex',
-            flexDirection: 'row', // Align buttons in a row
-            flexWrap: 'wrap',     // Allow buttons to wrap when there is no more space
-            gap: '5px',          // Add some spacing between buttons
-            alignItems: 'flex-start', // Align items to the top
+            ...styles.feedingItemListContainer,
         },
         buttonContainer: {
             display: 'flex',
@@ -36,12 +22,6 @@ function NumberItems({ data, changeIndex, nIndex, setNumberItems, styles }) {
         unselectedBtn: {
             backgroundColor: 'lightgrey',
         },
-        buttonStyle: {
-            margin: '5px',
-            padding: '5px 10px',
-            cursor: 'pointer',
-            width: '80px',  // Set consistent button width
-        }
     };
 
     const initial_item = {
@@ -113,12 +93,12 @@ function NumberItems({ data, changeIndex, nIndex, setNumberItems, styles }) {
             </div>
 
             {/* Fixed Add/Delete button section */}
-            <div style={styles.buttonContainer}>
-                <Button type="dashed" onClick={handleAddData} icon={<PlusOutlined />} size="large">
-                    Add item
+            <div style={styles.flexRowCenter}>
+                <Button type="primary" onClick={handleAddData} style={{ marginRight: '8px' }}>
+                    New
                 </Button>
-                <Button type="danger" onClick={handleDeleteData} icon={<DeleteOutlined />} size="large">
-                    Delete item
+                <Button onClick={handleDeleteData}>
+                    Delete
                 </Button>
             </div>
         </div>
