@@ -11,7 +11,7 @@ import Comment from './Comment';
 import './ToggleBtn.css'
 import { useState, useEffect } from 'react';
 import React from 'react';
-import { Button, Input, Checkbox } from 'antd';  // Import Ant Design components
+import { Button, Input, Checkbox, message } from 'antd';  // Import Ant Design components
 
 function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, styles }) {
     styles = {
@@ -302,49 +302,68 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, 
 
     const handleCloseFeeding = (index) => {
         const emptyFields = [];
-
-        // Check if all fields in feedingTemp are empty
-        for (const field in feedingTemp) {
-            if (field === 'Comment') {
-                continue; // Skip checking if the field is "Comment"
-            }
-
-            const value = feedingTemp[field];
+    
+        // Collect empty fields into the array
+        Object.entries(feedingTemp).forEach(([field, value]) => {
+            if (field === 'Comment') return;  // Skip "Comment"
+    
             if (Array.isArray(value)) {
-                // If the field is a list, loop through each item
-                for (let i = 0; i < value.length; i++) {
-                    const item = value[i];
-                    // Loop through each field in the item and check if empty
-                    for (const itemField in item) {
-                        if (item[itemField] === '') {
+                value.forEach((item, i) => {
+                    Object.entries(item).forEach(([itemField, itemValue]) => {
+                        if (itemValue === '') {
                             emptyFields.push(`Item ${i + 1} > ${itemField}`);
                         }
-                    }
-                }
+                    });
+                });
             } else if (value === '') {
                 emptyFields.push(field);
             }
-        }
-
-        // If any fields are empty, alert the user
+        });
+    
+        // Format the missing fields message
+        let messageContent = 'Please fill in the following fields:\n';
         if (emptyFields.length > 0) {
-            const missingFields = emptyFields.join(', ');
-            alert(`Please fill in the following fields: ${missingFields}`);
-        } else {
-            // If all fields are filled, close the feeding
-            setClosedIndex(closedIndex.includes(index) ?
-                closedIndex.filter(item => item !== index) : [...closedIndex, index]);
-
-            // add the class `closed_feeding` to the element
-            const feedingElem = document.getElementById(`feeding_${index}`);
-            if (feedingElem) {
-                feedingElem.classList.add('closed_feeding');
-            }
+            messageContent += emptyFields.join('\n');
         }
-
-        // make the closed tab disappear
+    
+        // Limit message length and provide more details if needed
+        const maxLength = 200; // Adjust based on your requirements
+        if (messageContent.length > maxLength) {
+            messageContent = messageContent.substring(0, maxLength) + '... (more details)';
+        }
+    
+        if (emptyFields.length > 0) {
+            message.error({
+                content: (
+                    <div style={{ maxWidth: '600px', maxHeight: '400px', overflowY: 'auto' }}>
+                        <pre style={{ whiteSpace: 'pre-wrap' }}>{messageContent}</pre>
+                    </div>
+                ),
+                duration: 5,
+            });
+            return;
+        }
+    
+        // Handle success scenario
+        if (emptyFields.length === 0) {
+            // If all fields are filled, close the feeding
+            setClosedIndex(prevClosedIndex =>
+                prevClosedIndex.includes(index)
+                    ? prevClosedIndex.filter(item => item !== index)
+                    : [...prevClosedIndex, index]
+            );
+    
+            // Show success message
+            message.success({
+                content: `Feeding ${index + 1} has been closed.`,
+                style: { marginTop: '20px' },
+                duration: 3,
+            });
+        }
+    
+        // Make the closed tab disappear
         displayClosedFeeding(false);
-    }
+    };    
 
     const displayClosedFeeding = (bool) => {
         setDisplayClosed(bool);
@@ -401,7 +420,7 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, 
                         <div style={styles.feedingsList}>
                             <div style={styles.feedingsContainer}>
                                 <div style={styles.flexRowCenter}>
-                                    <p style={{marginRight: '7.5px'}}>Show Closed Feeding:</p>
+                                    <p style={{ marginRight: '7.5px' }}>Show Closed Feeding:</p>
                                     <Checkbox checked={isClosedFeedingShown} onChange={toggleClosedFeeding} />
                                 </div>
 
@@ -430,7 +449,7 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, 
                                     })}
                                 </div>
 
-                                <div style={{...styles.flexRowCenter, marginTop: '12.5px'}}>
+                                <div style={{ ...styles.flexRowCenter, marginTop: '12.5px' }}>
                                     <Button type="primary" onClick={handleNewFeeding} style={{ marginRight: '8px' }}>New</Button>
                                     <Button type="default" onClick={handleDeleteFeeding} style={{ marginRight: '8px' }}>Delete</Button>
                                     <Button type="dashed" onClick={() => handleCloseFeeding(index)}>Close</Button>
