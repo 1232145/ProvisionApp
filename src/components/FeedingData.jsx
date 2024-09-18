@@ -11,7 +11,9 @@ import Comment from './Comment';
 import './ToggleBtn.css'
 import { useState, useEffect } from 'react';
 import React from 'react';
-import { Button, Input, Checkbox, message } from 'antd';  // Import Ant Design components
+import { Button, Input, Checkbox, message, Modal, Collapse } from 'antd';  // Import Ant Design components
+
+const { Panel } = Collapse;
 
 function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, styles }) {
     styles = {
@@ -245,46 +247,65 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, 
      */
     const handleDeleteFeeding = () => {
         if (feedings.length > 1) {
-            let removed = false;
-
             const ignore = ["FeedingID"];
             const filled = [];
 
             Object.entries(feedings[index]).forEach(([key, value]) => {
                 if (!ignore.includes(key)) {
                     if (Array.isArray(value)) {
-                        Object.values(value).forEach((item, i) => {
+                        value.forEach((item, i) => {
                             Object.entries(item).forEach(([keyItem, field]) => {
                                 if (field !== "") {
-                                    removed = true;
-                                    filled.push(`Item ${i + 1}: ` + keyItem);
+                                    filled.push(`Item ${i + 1}: ${keyItem}`);
                                 }
-                            })
-                        })
-                    }
-                    else if (value !== "") {
-                        removed = true;
+                            });
+                        });
+                    } else if (value !== "") {
                         filled.push(value);
                     }
                 }
-            })
+            });
 
-            if (!removed) {
+            const confirmDelete = () => {
                 const newData = feedings.filter((item, i) => i !== index);
                 setFeedings(newData);
 
                 if (index === 0) {
                     handleOpenFeeding(0);
-                }
-                else {
+                } else {
                     handleOpenFeeding(index - 1);
                 }
+            };
+
+            if (filled.length === 0) {
+                confirmDelete();
             }
             else {
-                alert(`Unable to delete: you have data filled at feeding ${index + 1}. Specifically at: ${filled}`)
+                Modal.confirm({
+                    title: 'Confirm Deletion',
+                    content: (
+                        <div>
+                            You have {filled.length} data filled at feeding {index + 1}.
+                            <Collapse style={{width: '80%'}}>
+                                <Panel header="View Details" key="1">
+                                    <ul>
+                                        {filled.map(item => (
+                                            <li key={item}>{item}</li>
+                                        ))}
+                                    </ul>
+                                </Panel>
+                            </Collapse>
+                        </div>
+                    ),
+                    onOk: confirmDelete,
+                    onCancel() { },
+                });
             }
         }
-    }
+        else {
+            message.error("You cannot delete the only feeding.");
+        }
+    };
 
     /**
      * this handles the switching of indexent feeding data to existing feeding data and updating that indexent feeding data if any changes
@@ -302,11 +323,11 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, 
 
     const handleCloseFeeding = (index) => {
         const emptyFields = [];
-    
+
         // Collect empty fields into the array
         Object.entries(feedingTemp).forEach(([field, value]) => {
             if (field === 'Comment') return;  // Skip "Comment"
-    
+
             if (Array.isArray(value)) {
                 value.forEach((item, i) => {
                     Object.entries(item).forEach(([itemField, itemValue]) => {
@@ -319,19 +340,19 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, 
                 emptyFields.push(field);
             }
         });
-    
+
         // Format the missing fields message
         let messageContent = 'Please fill in the following fields:\n';
         if (emptyFields.length > 0) {
             messageContent += emptyFields.join('\n');
         }
-    
+
         // Limit message length and provide more details if needed
         const maxLength = 200; // Adjust based on your requirements
         if (messageContent.length > maxLength) {
             messageContent = messageContent.substring(0, maxLength) + '... (more details)';
         }
-    
+
         if (emptyFields.length > 0) {
             message.error({
                 content: (
@@ -343,7 +364,7 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, 
             });
             return;
         }
-    
+
         // Handle success scenario
         if (emptyFields.length === 0) {
             // If all fields are filled, close the feeding
@@ -352,7 +373,7 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, 
                     ? prevClosedIndex.filter(item => item !== index)
                     : [...prevClosedIndex, index]
             );
-    
+
             // Show success message
             message.success({
                 content: `Feeding ${index + 1} has been closed.`,
@@ -360,10 +381,10 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, 
                 duration: 3,
             });
         }
-    
+
         // Make the closed tab disappear
         displayClosedFeeding(false);
-    };    
+    };
 
     const displayClosedFeeding = (bool) => {
         setDisplayClosed(bool);
