@@ -242,6 +242,23 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, 
         setNIndex(0);
     }
 
+    const displayItemsMessage = (data, message) => {
+        return (
+            <div>
+                {message}
+                <Collapse style={{ width: '100%', overflowY: 'auto' }}>
+                    <Panel header="View Details" key="1">
+                        <ul>
+                            {data.map(item => (
+                                <li key={item}>{item}</li>
+                            ))}
+                        </ul>
+                    </Panel>
+                </Collapse>
+            </div>
+        )
+    }
+
     /**
      * this deletes feeding data at current index
      */
@@ -283,20 +300,7 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, 
             else {
                 Modal.confirm({
                     title: 'Confirm Deletion',
-                    content: (
-                        <div>
-                            You have {filled.length} data filled at feeding {index + 1}.
-                            <Collapse style={{width: '80%'}}>
-                                <Panel header="View Details" key="1">
-                                    <ul>
-                                        {filled.map(item => (
-                                            <li key={item}>{item}</li>
-                                        ))}
-                                    </ul>
-                                </Panel>
-                            </Collapse>
-                        </div>
-                    ),
+                    content: displayItemsMessage(filled, `You have ${filled.length} data filled at feeding ${index + 1}.`),
                     onOk: confirmDelete,
                     onCancel() { },
                 });
@@ -341,25 +345,9 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, 
             }
         });
 
-        // Format the missing fields message
-        let messageContent = 'Please fill in the following fields:\n';
-        if (emptyFields.length > 0) {
-            messageContent += emptyFields.join('\n');
-        }
-
-        // Limit message length and provide more details if needed
-        const maxLength = 200; // Adjust based on your requirements
-        if (messageContent.length > maxLength) {
-            messageContent = messageContent.substring(0, maxLength) + '... (more details)';
-        }
-
         if (emptyFields.length > 0) {
             message.error({
-                content: (
-                    <div style={{ maxWidth: '600px', maxHeight: '400px', overflowY: 'auto' }}>
-                        <pre style={{ whiteSpace: 'pre-wrap' }}>{messageContent}</pre>
-                    </div>
-                ),
+                content: displayItemsMessage(emptyFields, " Please fill in the following fields:"),
                 duration: 5,
             });
             return;
