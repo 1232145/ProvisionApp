@@ -29,8 +29,7 @@ function PreyItem({setPreyItem, data}) {
                     })
                 }
                 <Button handleData={setPreyItem} value=""/>
-                <Button handleData={setPreyItem} value="drop-down" dropdownValues={dropdownValues} />
-
+                <Button handleData={setPreyItem} value="drop-down" selected={data} dropdownValues={dropdownValues} />
             </div>
         </div>
     )

@@ -17,7 +17,7 @@ function Recipient({ setRecipient, data }) {
           <Button key={index} value={item} handleData={setRecipient} selected={data === item} />
         ))}
         <Button handleData={setRecipient} value="" />
-        <Button handleData={setRecipient} value="drop-down" dropdownValues={dropdownValues} />
+        <Button handleData={setRecipient} value="drop-down" selected={data} dropdownValues={dropdownValues} />
 
       </div>
     </div>

@@ -24,7 +24,7 @@ function Provider({ setProvider, data }) {
           />
         ))}
         <Button handleData={setProvider} value="" />
-        <Button handleData={setProvider} value="drop-down" dropdownValues={dropdownValues} />
+        <Button handleData={setProvider} value="drop-down" selected={data} dropdownValues={dropdownValues} />
 
       </div>
     </div>

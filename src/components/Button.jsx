@@ -8,11 +8,18 @@ const styles = {
     fontSize: '90%',
     marginBottom: '5%',
   },
-  select: {
+  select: (isSelected) => ({
     width: '100%',
     height: '100%',
     marginTop: '2.5%',
-    fontSize: '90%'
+    fontSize: '90%',
+    color: isSelected ? 'white' : 'black',
+    border: isSelected ? '1px solid green' : '',
+    borderRadius: '7.5px'
+  }),
+  selectedOption: {
+    backgroundColor: 'green',
+    color: 'white',
   },
   selectedBtn: {
     backgroundColor: 'green',
@@ -21,7 +28,6 @@ const styles = {
 };
 
 function Button({ handleData, value, type, selected, dropdownValues }) {
-  // Clear Button
   if (value === "") {
     return (
       <AntButton
@@ -34,15 +40,16 @@ function Button({ handleData, value, type, selected, dropdownValues }) {
     );
   }
 
-  // Drop Down button
   if (value === "drop-down") {
+    const isSelectedValid = dropdownValues.includes(selected);
+
     return (
       <Select
-        style={styles.select}
-        value={selected || ""} // Set to empty string if selected is null/undefined
-        onChange={(value) => handleData(value)} // Call handleData with the selected value
+        style={styles.select(isSelectedValid)}
+        value={isSelectedValid ? selected : ""}
+        onChange={(value) => handleData(value)}
         placeholder="-- Select --"
-        dropdownStyle={{ fontSize: '16px' }} // Customize dropdown menu style
+        dropdownStyle={{ fontSize: '16px' }}
       >
         <Option value="">-- Select --</Option>
         {dropdownValues.map((option, index) => (

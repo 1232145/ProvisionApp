@@ -18,8 +18,7 @@ function Nest({ setNest, data }) {
           />
         ))}
         <Button handleData={setNest} value="" />
-        <Button handleData={setNest} value="drop-down" dropdownValues={dropdownValues} />
-
+        <Button handleData={setNest} selected={data} value="drop-down" dropdownValues={dropdownValues} />
       </div>
     </div>
   );

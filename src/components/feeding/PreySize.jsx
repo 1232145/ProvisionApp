@@ -25,7 +25,7 @@ function PreySize({ setPreySize, data }) {
           );
         })}
         <Button handleData={setPreySize} value="" />
-        <Button handleData={setPreySize} value="drop-down" dropdownValues={dropdownValues} />
+        <Button handleData={setPreySize} value="drop-down" selected={data} dropdownValues={dropdownValues} />
 
       </div>
     </div>
