@@ -40,14 +40,13 @@ function Button({ handleData, value, type, selected, dropdownValues }) {
       <Select
         style={styles.select}
         value={selected || ""} // Set to empty string if selected is null/undefined
-        onChange={(value) => handleData(value)}
+        onChange={(value) => handleData(value)} // Call handleData with the selected value
         placeholder="-- Select --"
         dropdownStyle={{ fontSize: '16px' }} // Customize dropdown menu style
       >
         <Option value="">-- Select --</Option>
         {dropdownValues.map((option, index) => (
-          //Note: option of dropdown not highlight
-          <Option key={index} value={option} style={{ ...(selected ? styles.selectedBtn : {})}}>
+          <Option key={index} value={option}>
             {option}
           </Option>
         ))}

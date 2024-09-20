@@ -249,8 +249,8 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, 
                 <Collapse style={{ width: '100%', overflowY: 'auto' }}>
                     <Panel header="View Details" key="1">
                         <ul>
-                            {data.map(item => (
-                                <li key={item}>{item}</li>
+                            {data.map((item, index) => (
+                                <li key={index}>{item}</li>
                             ))}
                         </ul>
                     </Panel>
