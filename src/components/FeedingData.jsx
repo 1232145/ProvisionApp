@@ -30,11 +30,12 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, 
             border: '1px solid black',
             display: 'flex',
             flexDirection: 'row',
-            flexWrap: 'wrap',  // Allow wrapping for smaller screens
+            flexWrap: 'wrap',
             justifyContent: 'space-around',
             padding: '20px',
-            gap: '20px',  // Add spacing between columns
-            borderBottom: 'none'
+            gap: '20px',
+            borderBottom: 'none',
+            borderRadius: '8px',
         },
         lowerMenuContainer: {
 
@@ -43,16 +44,18 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, 
             border: '1px solid black',
             display: 'flex',
             flexDirection: 'row',
-            flexWrap: 'wrap',  // Allow wrapping for smaller screens
+            flexWrap: 'wrap',
             justifyContent: 'space-evenly',
             padding: '20px',
-            gap: '20px',  // Add spacing between components
+            gap: '20px',
+            boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
+            borderRadius: '8px',
         },
         timerBtnContainer: {
             display: 'flex',
             flexDirection: 'row',
             justifyContent: 'space-around',
-            width: '30%'
+            width: '30%',
         },
         plotNoItemBtn: {
             marginLeft: '15px',
@@ -67,21 +70,22 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, 
             border: '1px solid black',
             justifyContent: 'space-between',
             padding: '12px',
+            borderRadius: '8px',
         },
         feedingItemListContainer: {
             flexGrow: 1,
-            overflowY: 'auto', // Enable vertical scrolling if needed
+            overflowY: 'auto',
             display: 'flex',
-            flexDirection: 'row', // Align buttons in a row
-            flexWrap: 'wrap',     // Allow buttons to wrap when there is no more space
-            gap: '5px',          // Add some spacing between buttons
-            alignItems: 'flex-start', // Align items to the top
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: '5px',
+            alignItems: 'flex-start',
         },
         flexRowCenter: {
             display: 'flex',
             flexDirection: 'row',
             alignItems: 'center',
-            flexWrap: 'wrap',  // Add this to allow wrapping
+            flexWrap: 'wrap',
         },
         feedHeader: {
             display: 'flex',
@@ -101,6 +105,23 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, 
         headContainer: {
             display: 'flex',
             flexDirection: 'column',
+        },
+
+        feedingItemContainer: {
+            border: '1px solid gray',
+            borderRadius: '8px',
+            padding: '15px',
+            height: 'auto',
+            minWidth: '150px',
+            backgroundColor: '#f9f9f9',
+            boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
+        },
+        feedingItemButtonContainer: {
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-evenly',
+            alignItems: 'stretch',
+            gap: '10px',
         }
     }
 
@@ -470,11 +491,11 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, 
                 </div>
 
                 <div style={styles.stintlContainer}>
-                    <Nest setNest={setNest} data={feeding.Nest} />
-                    <Provider setProvider={setProvider} data={feeding.Provider} />
-                    <Recipient setRecipient={setRecipient} data={feeding.Number_of_Items[nIndex].Recipient} />
-                    <PreySize setPreySize={setPreySize} data={feeding.Number_of_Items[nIndex].Prey_Size} />
-                    <PreyItem setPreyItem={setPreyItem} data={feeding.Number_of_Items[nIndex].Prey_Item} />
+                    <Nest setNest={setNest} data={feeding.Nest} styles={styles} />
+                    <Provider setProvider={setProvider} data={feeding.Provider} styles={styles} />
+                    <Recipient setRecipient={setRecipient} data={feeding.Number_of_Items[nIndex].Recipient} styles={styles} />
+                    <PreySize setPreySize={setPreySize} data={feeding.Number_of_Items[nIndex].Prey_Size} styles={styles} />
+                    <PreyItem setPreyItem={setPreyItem} data={feeding.Number_of_Items[nIndex].Prey_Item} styles={styles} />
                 </div>
 
                 <div>
