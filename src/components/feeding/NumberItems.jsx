@@ -41,6 +41,14 @@ function NumberItems({ data, changeIndex, nIndex, setNumberItems, styles }) {
         changeIndex(index)
     }
 
+    const deleteData = () => {
+        const newData = data.filter((_, i) => i !== nIndex);
+        setNumberItems(newData);
+
+        // Adjust the current index
+        changeIndex(nIndex === 0 ? 0 : nIndex - 1);
+    }
+
     // Delete the item at the current index, with validation
     const handleDeleteData = () => {
         if (data.length > 1) {
@@ -55,15 +63,18 @@ function NumberItems({ data, changeIndex, nIndex, setNumberItems, styles }) {
             });
 
             if (!hasData) {
-                const newData = data.filter((_, i) => i !== nIndex);
-                setNumberItems(newData);
-
-                // Adjust the current index
-                changeIndex(nIndex === 0 ? 0 : nIndex - 1);
+                Modal.confirm({
+                    title: 'Confirm Deletion',
+                    content: 'Are you sure you want to delete this item?',
+                    onOk: deleteData,
+                    onCancel() { },
+                });
             } else {
-                Modal.warning({
+                Modal.confirm({
                     title: 'Cannot Delete Item',
                     content: `Data is filled in the following fields: ${filledFields.join(', ')}. Clear these fields before deleting.`,
+                    onOk: deleteData,
+                    onCancel() {}
                 });
             }
         } else {
