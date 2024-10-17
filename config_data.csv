@@ -1,0 +1,13 @@
+Name,Island,ObserverLocation,Nest,Provider,Recipient,PreySize,PreyItem,MaxEntries
+Alice Johnson,islandName,NYC,P1,BA,A,0.25,H,10
+Mark Smith,islandName,NYC,P2,BL,B,0.30,U
+Sophia Davis,islandName,LA,P3,FR,C,0.35,R
+Liam Brown,islandName,Miami,P4,BR,D,0.40,S
+Olivia Wilson,islandName,Chicago,P5,U,E,0.45,A
+James Miller,islandName,Seattle,P6,X,F,0.50,H
+Emily Garcia,islandName,Denver,P7,AA,G,0.55,AL
+Michael Martinez,islandName,Boston,P8,AB,H,0.60,K
+Ava Rodriguez,islandName,Austin,P9,UC,I,0.65,EEL
+David Lee,islandName,Portland,P10,TA,J,0.70,DR
+Isabella Perez,islandName,San Francisco,P11,KF,K,0.75,C
+Ethan Hernandez,islandName,Miami,P12,KM,L,0.80,B

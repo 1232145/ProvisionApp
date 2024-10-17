@@ -109,8 +109,10 @@ const styles = {
     },
 
     inputField: {
-        width: '85%',
-        height: '25px'
+        width: '40%',
+        height: '25px',
+        overflowX: 'auto',
+        marginLeft: '5px'
     },
 };
 
@@ -412,7 +414,6 @@ function StintData() {
                 const config = configToJson(csv);
 
                 setConfig(config);
-                console.log(config);
             }
         };
 
@@ -452,13 +453,13 @@ function StintData() {
                                                 <span style={styles.label}>Prey size reference:</span> {stint.Prey_Size_Reference}
                                             </div>
                                         </div>
-                                        <Island setIsland={setIsland} data={stint.Island} styles={styles} />
+                                        <Island setIsland={setIsland} data={stint.Island} styles={styles} config={config} />
                                         <Species setSpecies={setSpecies} data={stint.Species} styles={styles} />
                                         <Comment setComment={setComment} data={stint.Comment} styles={styles} />
                                     </Col>
                                     <Col xs={24} md={12} style={styles.rightColumn}>
-                                        <Name setName={setName} data={stint.Name} styles={styles} />
-                                        <ObserverLocation setObs={setObserverLocation} data={stint.Observer_Location} styles={styles} />
+                                        <Name setName={setName} data={stint.Name} styles={styles} config={config} />
+                                        <ObserverLocation setObs={setObserverLocation} data={stint.Observer_Location} styles={styles} config={config} />
                                         <Timer setTime={setTimeArrive} data={stint.Date_Time_Start} label="Time start" description="Time start" styles={styles} />
                                         <Timer setTime={setTimeDepart} data={stint.Date_Time_End} label="Time depart" description="Time depart" styles={styles} />
                                     </Col>
