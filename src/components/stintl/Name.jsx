@@ -1,27 +1,18 @@
 import React from 'react';
 
 function Name({ setName, data, styles }) {
-  const handleChange = (e, type) => {
-    setName(e.currentTarget.value, type);
+  const handleChange = (e) => {
+    setName(e.currentTarget.value);
   };
 
   return (
     <>
       <div style={styles.inputContainer}>
-        <p style={styles.labelContainer}><span style={styles.label}>First name:</span></p>
+        <p style={styles.labelContainer}><span style={styles.label}>Name:</span></p>
         <input
-            onChange={(e) => handleChange(e, "first")}
-            value={data.firstName}
-            placeholder="First name"
-            style={styles.inputField}
-          />
-      </div>
-      <div style={styles.inputContainer}>
-        <p style={styles.labelContainer}><span style={styles.label}>Last name:</span></p>
-        <input
-            onChange={(e) => handleChange(e, "last")}
-            value={data.lastName}
-            placeholder="Last name"
+            onChange={(e) => handleChange(e)}
+            value={data}
+            placeholder="Name"
             style={styles.inputField}
           />
       </div>

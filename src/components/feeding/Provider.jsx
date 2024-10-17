@@ -1,10 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Button from '../Button';
-import { useState } from 'react';
 
-function Provider({ setProvider, data, styles }) {
-  const [providers, setProviders] = useState(["BA", "BL", "BR", "FR", "S", "U", "UA", "UB", "UC", "X"]);
-  const dropdownValues = ["AA", "AB", "BMB", "KF", "KM","SMB", "TA"];
+function Provider({ setProvider, data, styles, config }) {
+  // Set default providers
+  const defaultProviders = ["BA", "BL", "BR", "FR", "S", "U", "UA", "UB", "UC", "X", "AA", "AB", "BMB", "KF", "KM", "SMB", "TA"];
+  
+  // Determine providers based on config or use default values
+  const initialProviders = config?.Provider ? config.Provider.slice(0, config.MaxEntries[0]) : defaultProviders.slice(0, 10); // Take first 10 or default
+  const [providers, setProviders] = useState(initialProviders);
+  
+  // Determine dropdown values based on config
+  const dropdownValues = config?.Provider ? config.Provider.slice(config.MaxEntries[0]) : defaultProviders.slice(10);
 
   return (
     <div style={styles.feedingItemContainer}>

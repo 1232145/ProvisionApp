@@ -15,7 +15,7 @@ import { Button, Input, Checkbox, message, Modal, Collapse } from 'antd';  // Im
 
 const { Panel } = Collapse;
 
-function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, styles }) {
+function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, styles, config }) {
     styles = {
         ...styles,
         outerContainer: {
@@ -491,11 +491,11 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, 
                 </div>
 
                 <div style={styles.stintlContainer}>
-                    <Nest setNest={setNest} data={feeding.Nest} styles={styles} />
-                    <Provider setProvider={setProvider} data={feeding.Provider} styles={styles} />
-                    <Recipient setRecipient={setRecipient} data={feeding.Number_of_Items[nIndex].Recipient} styles={styles} />
-                    <PreySize setPreySize={setPreySize} data={feeding.Number_of_Items[nIndex].Prey_Size} styles={styles} />
-                    <PreyItem setPreyItem={setPreyItem} data={feeding.Number_of_Items[nIndex].Prey_Item} styles={styles} />
+                    <Nest setNest={setNest} data={feeding.Nest} styles={styles} config={config} />
+                    <Provider setProvider={setProvider} data={feeding.Provider} styles={styles} config={config} />
+                    <Recipient setRecipient={setRecipient} data={feeding.Number_of_Items[nIndex].Recipient} styles={styles} config={config} />
+                    <PreySize setPreySize={setPreySize} data={feeding.Number_of_Items[nIndex].Prey_Size} styles={styles} config={config} />
+                    <PreyItem setPreyItem={setPreyItem} data={feeding.Number_of_Items[nIndex].Prey_Item} styles={styles} config={config} />
                 </div>
 
                 <div>

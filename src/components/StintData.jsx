@@ -10,7 +10,8 @@ import Timer from './Timer';
 import Comment from './Comment';
 import { saveAs } from 'file-saver';
 import FeedingData from './FeedingData';
-import { Button, Input, Row, Col } from 'antd';
+import { Button, Row, Col, Upload } from 'antd';
+import { UploadOutlined } from '@ant-design/icons';
 
 const styles = {
     startStint: {
@@ -23,7 +24,7 @@ const styles = {
         borderRadius: '5px',
         boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
         width: '50%',
-        margin: '2.5% auto',
+        margin: '0.5% auto',
         backgroundColor: '#f9f9f9',
         maxWidth: '900px',
     },
@@ -103,7 +104,7 @@ const styles = {
     },
 
     fileInput: {
-        width: '50%',
+        width: '100%',
         padding: '8px',
     },
 
@@ -140,8 +141,7 @@ function StintData() {
         Species: "",
         Prey_Size_Method: "Numeric",
         Prey_Size_Reference: "Culmen length",
-        FirstName: "",
-        LastName: "",
+        Name: "",
         Observer_Location: "",
         Date_Time_Start: "",
         Date_Time_End: "",
@@ -149,7 +149,9 @@ function StintData() {
         feedingData: [initialFeeding]
     });
 
-    const [stintID, setStintID] = useState(`${stint.Island}-${stint.Species}-${stint.Date_Time_Start}-${stint.FirstName}-${stint.LastName}`)
+    const [config, setConfig] = useState(null);
+
+    const [stintID, setStintID] = useState(`${stint.Island}-${stint.Species}-${stint.Date_Time_Start}-${stint.Name}`)
 
     //display stintl/feeding data
     const [isOpenF, setIsOpenF] = useState(false);
@@ -174,15 +176,9 @@ function StintData() {
     /**
      * Sets the first or last name data in stitnl
      * @param {*} val 
-     * @param {*} type 
      */
-    const setName = (val, type) => {
-        if (type === "first") {
-            setStint({ ...stint, FirstName: val })
-        }
-        else {
-            setStint({ ...stint, LastName: val });
-        }
+    const setName = (val) => {
+        setStint({ ...stint, Name: val });
     }
 
     /**
@@ -241,7 +237,7 @@ function StintData() {
     const jsonToCSV = (json) => {
         const header = [
             'StintID', 'Stint_Type', 'Island', 'Species', 'Prey_Size_Method', 'Prey_Size_Reference',
-            'FirstName', 'LastName', 'Observer_Location', 'Date_Time_Start', 'Date_Time_End', 'Stint_Comment',
+            'Name', 'Observer_Location', 'Date_Time_Start', 'Date_Time_End', 'Stint_Comment',
             'FeedingID', 'Nest', 'Time_Arrive', 'Time_Depart', 'Provider', 'Recipient', 'Prey_Item', 'Prey_Size',
             'Number_of_Items', 'Plot_Status', 'Feeding_Comment'
         ];
@@ -252,7 +248,7 @@ function StintData() {
                 //careful with Number_of_Items as it is not an integer anymore but JSON so feeding.Number_of_Items.length
                 const row = [
                     json.StintID, json.Stint_Type, json.Island, json.Species, json.Prey_Size_Method, json.Prey_Size_Reference,
-                    json.FirstName, json.LastName, json.Observer_Location, json.Date_Time_Start, json.Date_Time_End, json.Comment,
+                    json.Name, json.Observer_Location, json.Date_Time_Start, json.Date_Time_End, json.Comment,
                     feeding.FeedingID, feeding.Nest, feeding.Time_Arrive, feeding.Time_Depart, feeding.Provider, item.Recipient,
                     item.Prey_Item, item.Prey_Size, feeding.Number_of_Items.length, feeding.Plot_Status, feeding.Comment
                 ];
@@ -280,7 +276,7 @@ function StintData() {
 
         for (const line of dataLines) {
             const values = line.split(',');
-            const feedingID = values[12];
+            const feedingID = values[11];
 
             if (feedingID !== currentFeedingID) {
                 if (currentFeedingID !== null) {
@@ -290,22 +286,22 @@ function StintData() {
                 currentFeedingID = feedingID;
                 currentFeeding = {
                     FeedingID: feedingID,
-                    Nest: values[13],
-                    Time_Arrive: values[14],
-                    Time_Depart: values[15],
-                    Provider: values[16],
+                    Nest: values[12],
+                    Time_Arrive: values[13],
+                    Time_Depart: values[14],
+                    Provider: values[15],
                 };
                 currentNumberOfItems = [];
             }
 
             currentNumberOfItems.push({
-                Recipient: values[17],
-                Prey_Item: values[18],
-                Prey_Size: values[19],
+                Recipient: values[16],
+                Prey_Item: values[17],
+                Prey_Size: values[18],
             });
 
-            currentFeeding.Plot_Status = values[21];
-            currentFeeding.Comment = values[22];
+            currentFeeding.Plot_Status = values[20];
+            currentFeeding.Comment = values[21];
         }
 
         currentFeeding.Number_of_Items = currentNumberOfItems;
@@ -320,16 +316,34 @@ function StintData() {
             Species: stintData[3],
             Prey_Size_Method: stintData[4],
             Prey_Size_Reference: stintData[5],
-            FirstName: stintData[6],
-            LastName: stintData[7],
-            Observer_Location: stintData[8],
-            Date_Time_Start: stintData[9],
-            Date_Time_End: stintData[10],
-            Comment: stintData[11],
+            Name: stintData[6],
+            Observer_Location: stintData[7],
+            Date_Time_Start: stintData[8],
+            Date_Time_End: stintData[9],
+            Comment: stintData[10],
             feedingData: feedingData,
         };
 
         return jsonObject;
+    }
+
+    /**
+     * Converts CSV data to a config object
+     * @param {*} csv 
+     * @returns 
+     */
+    function configToJson(csv) {
+        const lines = csv.split('\n').filter(line => line.trim() !== '');
+        const keys = lines[0].split(',');
+        const json = {};
+
+        keys.forEach((key, index) => {
+            const values = lines.slice(1).map(line => line.split(',')[index]);
+            // If the key is "MaxEntries", ensure it only takes the first value
+            json[key] = key === 'MaxEntries' ? values.slice(0, 1) : values;
+        });
+
+        return json;
     }
 
     const handleSaveClick = () => {
@@ -380,7 +394,7 @@ function StintData() {
         saveAs(file, dowloadName);
     }
 
-    const handleOpenClick = (event) => {
+    const handleOpenClick = (event, type) => {
         const file = event.target.files[0];
         if (!file) return;
 
@@ -388,9 +402,18 @@ function StintData() {
 
         reader.onload = (e) => {
             const csv = e.target.result;
-            const stintl = csvToJson(csv);
 
-            setStint(stintl);
+            if (type === 'stint') {
+                const stint = csvToJson(csv);
+
+                setStint(stint);
+            }
+            else if (type === 'config') {
+                const config = configToJson(csv);
+
+                setConfig(config);
+                console.log(config);
+            }
         };
 
         reader.onerror = () => {
@@ -402,7 +425,7 @@ function StintData() {
 
     //detect change in stint to create stintID
     useEffect(() => {
-        setStintID(`${stint.Island}-${stint.Species}-${stint.Date_Time_Start}-${stint.FirstName}-${stint.LastName}`.replace(" ", "-"));
+        setStintID(`${stint.Island}-${stint.Species}-${stint.Date_Time_Start}-${stint.Name}`.replace(" ", "-"));
     }, [stint])
 
     return (
@@ -434,7 +457,7 @@ function StintData() {
                                         <Comment setComment={setComment} data={stint.Comment} styles={styles} />
                                     </Col>
                                     <Col xs={24} md={12} style={styles.rightColumn}>
-                                        <Name setName={setName} data={{ firstName: stint.FirstName, lastName: stint.LastName }} styles={styles} />
+                                        <Name setName={setName} data={stint.Name} styles={styles} />
                                         <ObserverLocation setObs={setObserverLocation} data={stint.Observer_Location} styles={styles} />
                                         <Timer setTime={setTimeArrive} data={stint.Date_Time_Start} label="Time start" description="Time start" styles={styles} />
                                         <Timer setTime={setTimeDepart} data={stint.Date_Time_End} label="Time depart" description="Time depart" styles={styles} />
@@ -445,26 +468,42 @@ function StintData() {
                                 <div style={styles.btnContainer}>
                                     <Button
                                         type="primary"
-                                        style={styles.navigateBtn}
+                                        style={{ ...styles.navigateBtn, flex: 1, marginRight: '10px' }} // Adjust margin as needed
                                         onClick={() => setIsOpenF(!isOpenF)}
                                     >
                                         {!isOpenF ? 'Open Feeding' : 'Back to Stint'}
                                     </Button>
                                     <Button
                                         type="primary"
-                                        style={styles.saveBtn}
+                                        style={{ ...styles.saveBtn, flex: 1, marginRight: '10px' }} // Adjust margin as needed
                                         onClick={handleSaveClick}
                                     >
                                         Save file
                                     </Button>
-                                    <Input
-                                        type="file"
-                                        ref={fileInput}
-                                        style={styles.fileInput}
+                                    <Upload
                                         accept=".csv"
-                                        onChange={(e) => handleOpenClick(e)}
-                                    />
+                                        showUploadList={false}
+                                        beforeUpload={(file) => {
+                                            handleOpenClick({ target: { files: [file] } }, 'stint');
+                                            return false; // Prevent automatic upload
+                                        }}
+                                        style={{ flex: 1, marginRight: '10px' }} // Adjust margin as needed
+                                    >
+                                        <Button icon={<UploadOutlined />} style={{ width: '100%' }}>Upload File</Button>
+                                    </Upload>
+                                    <Upload
+                                        accept=".csv"
+                                        showUploadList={false}
+                                        beforeUpload={(file) => {
+                                            handleOpenClick({ target: { files: [file] } }, 'config');
+                                            return false; // Prevent automatic upload
+                                        }}
+                                        style={{ flex: 1 }} // No margin needed here to fill space
+                                    >
+                                        <Button icon={<UploadOutlined />} style={{ width: '100%' }}>Upload Config</Button>
+                                    </Upload>
                                 </div>
+
                                 <div style={{ maxWidth: '100%', overflowX: 'auto' }}>
                                     <DataTable stint={stint} />
                                 </div>
@@ -482,6 +521,7 @@ function StintData() {
                                     isOpen={isOpenF}
                                     onToggle={() => setIsOpenF(!isOpenF)}
                                     styles={styles}
+                                    config={config}
                                 />
                             </div>
                         </>

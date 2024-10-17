@@ -1,9 +1,16 @@
 import React, { useState } from 'react';
 import Button from '../Button';
 
-function Nest({ setNest, data, styles }) {
-  const [nests, setNests] = useState(["P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9", "P10"]);
-  const dropdownValues = ["P11", "P12", "P13", "P14", "P15", "P16", "P17", "P18", "P19", "P20"];
+function Nest({ setNest, data, styles, config }) {
+  // Set default nests
+  const defaultNests = ["P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9", "P10"];
+  
+  // Determine nests based on config or use default values
+  const initialNests = config?.Nest ? config.Nest.slice(0, config.MaxEntries[0]) : defaultNests.slice(0, 10); // Take first 10 or default
+  const [nests, setNests] = useState(initialNests);
+  
+  // Determine dropdown values based on config
+  const dropdownValues = config?.Nest ? config.Nest.slice(config.MaxEntries[0]) : defaultNests.slice(10); // Take remaining or default
 
   return (
     <div style={styles.feedingItemContainer}>
