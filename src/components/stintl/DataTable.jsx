@@ -59,21 +59,7 @@ function DataTable(props) {
         <div>
           {record.Number_of_Items.map((item, index) => (
             <div key={index} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {item.Recipient}
-            </div>
-          ))}
-        </div>
-      ),
-      width: 150
-    },
-    {
-      title: 'Prey Item',
-      key: 'Prey_Item',
-      render: (text, record) => (
-        <div>
-          {record.Number_of_Items.map((item, index) => (
-            <div key={index} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {item.Prey_Item}
+              {item.Recipient || '_'}
             </div>
           ))}
         </div>
@@ -87,7 +73,21 @@ function DataTable(props) {
         <div>
           {record.Number_of_Items.map((item, index) => (
             <div key={index} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {item.Prey_Size}
+              {item.Prey_Size || '_'}
+            </div>
+          ))}
+        </div>
+      ),
+      width: 150
+    },
+    {
+      title: 'Prey Item',
+      key: 'Prey_Item',
+      render: (text, record) => (
+        <div>
+          {record.Number_of_Items.map((item, index) => (
+            <div key={index} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {item.Prey_Item || '_'}
             </div>
           ))}
         </div>
