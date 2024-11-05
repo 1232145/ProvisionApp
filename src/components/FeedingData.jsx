@@ -20,7 +20,7 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, 
         ...styles,
         outerContainer: {
             border: '1px solid #d9d9d9',
-            margin: '30px 50px',
+            margin: '10px 50px',
             padding: '20px',
             borderRadius: '5px',
             boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
@@ -30,10 +30,10 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, 
             border: '1px solid black',
             display: 'flex',
             flexDirection: 'row',
-            flexWrap: 'wrap',
+            overflowX: 'auto',
             justifyContent: 'space-around',
-            padding: '20px',
-            gap: '20px',
+            padding: '10px',
+            gap: '2px',
             borderBottom: 'none',
             borderRadius: '8px',
         },
@@ -44,10 +44,10 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, 
             border: '1px solid black',
             display: 'flex',
             flexDirection: 'row',
-            flexWrap: 'wrap',
+            overflowX: 'auto',
             justifyContent: 'space-evenly',
-            padding: '20px',
-            gap: '20px',
+            padding: '10px',
+            gap: '2px',
             boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
             borderRadius: '8px',
         },
@@ -443,11 +443,11 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, 
                         </div>
                     </div>
                     <div style={{ ...styles.upperMenuContainer, ...styles.lowerMenuContainer }}>
-                        <div>
+                        <div style={{flexShrink: 1, minWidth: '0'}}>
                             <NumberItems setNumberItems={setNumberItems} data={feeding.Number_of_Items} changeIndex={setNIndex} nIndex={nIndex} styles={styles} />
                         </div>
 
-                        <div style={styles.feedingsList}>
+                        <div style={{flexShrink: 1, minWidth: '0'}}>
                             <div style={styles.feedingsContainer}>
                                 <div style={styles.flexRowCenter}>
                                     <p style={{ marginRight: '7.5px' }}>Show Closed Feeding:</p>
