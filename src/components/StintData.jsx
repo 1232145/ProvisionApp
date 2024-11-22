@@ -1,5 +1,4 @@
-import React, { useEffect } from 'react';
-import { useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import Island from './stintl/Island'
 import Species from './stintl/Species'
 import Name from './stintl/Name'
@@ -10,8 +9,8 @@ import Timer from './Timer';
 import Comment from './Comment';
 import { saveAs } from 'file-saver';
 import FeedingData from './FeedingData';
-import { Button, Row, Col, Upload } from 'antd';
-import { UploadOutlined } from '@ant-design/icons';
+import { Button, Row, Col, Upload, Modal, message } from 'antd';
+import { UploadOutlined, WarningOutlined } from '@ant-design/icons';
 
 const styles = {
     startStint: {
@@ -157,7 +156,6 @@ function StintData() {
 
     //display stintl/feeding data
     const [isOpenF, setIsOpenF] = useState(false);
-    const fileInput = useRef(null);
 
     /**
      * Sets the island data in stintl
@@ -382,7 +380,19 @@ function StintData() {
         });
 
         if (emptyFields.length > 0) {
-            alert(`Missing fields:\n${emptyFields.join('\n')}`);
+            Modal.error({
+                title: 'Missing Required Fields',
+                content: (
+                    <div style={{overflowY: 'auto'}}>
+                        <p>Please fill in the following fields:</p>
+                        <ul>
+                            {emptyFields.map((field, index) => (
+                                <li key={index}>{field}</li>
+                            ))}
+                        </ul>
+                    </div>
+                ),
+            });
             return;
         }
 
@@ -394,6 +404,13 @@ function StintData() {
         const dowloadName = stintID;
 
         saveAs(file, dowloadName);
+
+        try {
+            localStorage.removeItem('stintBackup');
+            localStorage.removeItem('stintBackupTime');
+        } catch (error) {
+            console.error('Error clearing backup:', error);
+        }
     }
 
     const handleOpenClick = (event, type) => {
@@ -429,6 +446,68 @@ function StintData() {
         setStintID(`${stint.Island}-${stint.Species}-${stint.Date_Time_Start}-${stint.Name}`.replace(" ", "-"));
     }, [stint])
 
+    // Handle unexpected exits by saving to localStorage
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            // Save current stint data to localStorage
+            try {
+                localStorage.setItem('stintBackup', JSON.stringify(stint));
+                localStorage.setItem('stintBackupTime', new Date().toISOString());
+            } catch (error) {
+                console.error('Error creating backup:', error);
+            }
+        };
+
+        // Save data before the window/tab closes
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        // Also save periodically in case of system crash
+        const backupInterval = setInterval(handleBeforeUnload, 60000); // Backup every minute
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+            clearInterval(backupInterval);
+        };
+    }, [stint]);
+
+    // Check for backup data when component mounts
+    useEffect(() => {
+        const checkForBackup = () => {
+            try {
+                const backupData = localStorage.getItem('stintBackup');
+                const backupTime = localStorage.getItem('stintBackupTime');
+
+                if (backupData && backupTime) {
+                    const lastBackupTime = new Date(backupTime).toLocaleString();
+
+                    Modal.confirm({
+                        title: 'Recover Previous Session',
+                        icon: <WarningOutlined />,
+                        content: `Found unsaved work from ${lastBackupTime}. Would you like to recover it?`,
+                        okText: 'Recover',
+                        cancelText: 'Start Fresh',
+                        onOk() {
+                            setStint(JSON.parse(backupData));
+                            message.success('Previous session recovered');
+                        },
+                        onCancel() {
+                            // Clear backup data if user doesn't want to recover
+                            localStorage.removeItem('stintBackup');
+                            localStorage.removeItem('stintBackupTime');
+                            message.info('Starting fresh session');
+                        },
+                    });
+                }
+            } catch (error) {
+                console.error('Error checking for backup:', error);
+                message.error('Failed to check for previous session');
+            }
+        };
+
+        checkForBackup();
+    }, []);
+
+
     return (
         <div>
             {
@@ -436,7 +515,7 @@ function StintData() {
                     (
                         <>
                             <div style={styles.startStint}>
-                                <h1 style={styles.header}>Provision App</h1>
+                                <h1 style={styles.header}>Provisioning App</h1>
                                 <Row gutter={16} style={styles.form}>
                                     <Col xs={24} md={12} style={styles.leftColumn}>
                                         <div style={styles.fixedInfo}>
@@ -460,8 +539,8 @@ function StintData() {
                                     <Col xs={24} md={12} style={styles.rightColumn}>
                                         <Name setName={setName} data={stint.Name} styles={styles} config={config} />
                                         <ObserverLocation setObs={setObserverLocation} data={stint.Observer_Location} styles={styles} config={config} />
-                                        <Timer setTime={setTimeArrive} data={stint.Date_Time_Start} label="Time start" description="Time start" styles={styles} />
-                                        <Timer setTime={setTimeDepart} data={stint.Date_Time_End} label="Time depart" description="Time depart" styles={styles} />
+                                        <Timer setTime={setTimeArrive} data={stint.Date_Time_Start} label="Start Stint Time" description="Start Stint Time" styles={styles} />
+                                        <Timer setTime={setTimeDepart} data={stint.Date_Time_End} label="End Stint Time" description="End Stint Time" styles={styles} />
                                     </Col>
                                 </Row>
 
