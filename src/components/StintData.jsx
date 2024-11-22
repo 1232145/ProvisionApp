@@ -446,68 +446,6 @@ function StintData() {
         setStintID(`${stint.Island}-${stint.Species}-${stint.Date_Time_Start}-${stint.Name}`.replace(" ", "-"));
     }, [stint])
 
-    // Handle unexpected exits by saving to localStorage
-    useEffect(() => {
-        const handleBeforeUnload = () => {
-            // Save current stint data to localStorage
-            try {
-                localStorage.setItem('stintBackup', JSON.stringify(stint));
-                localStorage.setItem('stintBackupTime', new Date().toISOString());
-            } catch (error) {
-                console.error('Error creating backup:', error);
-            }
-        };
-
-        // Save data before the window/tab closes
-        window.addEventListener('beforeunload', handleBeforeUnload);
-
-        // Also save periodically in case of system crash
-        const backupInterval = setInterval(handleBeforeUnload, 60000); // Backup every minute
-
-        return () => {
-            window.removeEventListener('beforeunload', handleBeforeUnload);
-            clearInterval(backupInterval);
-        };
-    }, [stint]);
-
-    // Check for backup data when component mounts
-    useEffect(() => {
-        const checkForBackup = () => {
-            try {
-                const backupData = localStorage.getItem('stintBackup');
-                const backupTime = localStorage.getItem('stintBackupTime');
-
-                if (backupData && backupTime) {
-                    const lastBackupTime = new Date(backupTime).toLocaleString();
-
-                    Modal.confirm({
-                        title: 'Recover Previous Session',
-                        icon: <WarningOutlined />,
-                        content: `Found unsaved work from ${lastBackupTime}. Would you like to recover it?`,
-                        okText: 'Recover',
-                        cancelText: 'Start Fresh',
-                        onOk() {
-                            setStint(JSON.parse(backupData));
-                            message.success('Previous session recovered');
-                        },
-                        onCancel() {
-                            // Clear backup data if user doesn't want to recover
-                            localStorage.removeItem('stintBackup');
-                            localStorage.removeItem('stintBackupTime');
-                            message.info('Starting fresh session');
-                        },
-                    });
-                }
-            } catch (error) {
-                console.error('Error checking for backup:', error);
-                message.error('Failed to check for previous session');
-            }
-        };
-
-        checkForBackup();
-    }, []);
-
-
     return (
         <div>
             {
