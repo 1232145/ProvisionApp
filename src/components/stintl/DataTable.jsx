@@ -2,6 +2,12 @@ import React, { useState } from 'react';
 import { Button, Table, Collapse } from 'antd';
 
 const { Panel } = Collapse;
+const styles = {
+  column: {
+    maxWidth: '70px',
+    overflow: 'auto',
+  }
+}
 
 function DataTable(props) {
   const [showData, setShowData] = useState(false);
@@ -34,21 +40,92 @@ function DataTable(props) {
   };
 
   const stintColumns = [
-    { title: 'Stint ID', dataIndex: 'StintID', key: 'StintID', width: 100 },
-    { title: 'Type', dataIndex: 'Stint_Type', key: 'Stint_Type', width: 150 },
-    { title: 'Island', dataIndex: 'Island', key: 'Island', width: 150 },
-    { title: 'Species', dataIndex: 'Species', key: 'Species', width: 150 },
-    { title: 'Prey Size Method', dataIndex: 'Prey_Size_Method', key: 'Prey_Size_Method', width: 200 },
-    { title: 'Prey Size Reference', dataIndex: 'Prey_Size_Reference', key: 'Prey_Size_Reference', width: 200 },
-    { title: 'First Name', dataIndex: 'Name', key: 'Name', width: 150 },
-    { title: 'Observer Location', dataIndex: 'Observer_Location', key: 'Observer_Location', width: 200 },
-    { title: 'Date Time Start', dataIndex: 'Date_Time_Start', key: 'Date_Time_Start', width: 200 },
-    { title: 'Date Time End', dataIndex: 'Date_Time_End', key: 'Date_Time_End', width: 200 },
+    {
+      title: 'Type', dataIndex: 'Stint_Type', key: 'Stint_Type', width: 150,
+      render: text => (
+        <div style={styles.column}>
+          {text}
+        </div>
+      )
+    },
+    {
+      title: 'Island', dataIndex: 'Island', key: 'Island', width: 150,
+      render: text => (
+        <div style={styles.column}>
+          {text}
+        </div>
+      )
+    },
+    {
+      title: 'Species', dataIndex: 'Species', key: 'Species', width: 150,
+      render: text => (
+        <div style={styles.column}>
+          {text}
+        </div>
+      )
+    },
+    {
+      title: 'Prey Size Method', dataIndex: 'Prey_Size_Method', key: 'Prey_Size_Method', width: 200,
+      render: text => (
+        <div style={styles.column}>
+          {text}
+        </div>
+      )
+    },
+    {
+      title: 'Prey Size Reference', dataIndex: 'Prey_Size_Reference', key: 'Prey_Size_Reference', width: 150,
+      render: text => (
+        <div style={styles.column}>
+          {text}
+        </div>
+      )
+    },
+    {
+      title: 'First Name', dataIndex: 'Name', key: 'Name', width: 150,
+      render: text => (
+        <div style={styles.column}>
+          {text}
+        </div>
+      )
+    },
+    {
+      title: 'Observer Location', dataIndex: 'Observer_Location', key: 'Observer_Location', width: 150,
+      render: text => (
+        <div style={styles.column}>
+          {text}
+        </div>
+      )
+    },
+    {
+      title: 'Date Time Start', dataIndex: 'Date_Time_Start', key: 'Date_Time_Start', width: 150,
+      render: text => (
+        <div style={styles.column}>
+          {text}
+        </div>
+      )
+    },
+    {
+      title: 'Date Time End', dataIndex: 'Date_Time_End', key: 'Date_Time_End', width: 150,
+      render: text => (
+        <div style={styles.column}>
+          {text}
+        </div>
+      )
+    },
   ];
 
+
   const feedingColumns = [
-    { title: 'Feeding ID', dataIndex: 'FeedingID', key: 'FeedingID', width: 100 },
-    { title: 'Nest', dataIndex: 'Nest', key: 'Nest', width: 150 },
+    { title: 'Feeding ID', dataIndex: 'FeedingID', key: 'FeedingID', width: 100, render: text => (
+      <div style={styles.column}>
+        {text}
+      </div>
+    ) },
+    { title: 'Nest', dataIndex: 'Nest', key: 'Nest', width: 150, render: text => (
+      <div style={styles.column}>
+        {text}
+      </div>
+    ) },
     { title: 'Time Arrive', dataIndex: 'Time_Arrive', key: 'Time_Arrive', width: 150 },
     { title: 'Time Depart', dataIndex: 'Time_Depart', key: 'Time_Depart', width: 150 },
     { title: 'Provider', dataIndex: 'Provider', key: 'Provider', width: 150 },
@@ -119,7 +196,7 @@ function DataTable(props) {
                 columns={stintColumns}
                 pagination={false}
                 rowKey="StintID"
-                scroll={{ x: 1200 }}  // Adjust this value based on your content
+                scroll={{ x: 0 }}
               />
             </Panel>
             <Panel header="Feeding Data" key="2">
@@ -128,10 +205,17 @@ function DataTable(props) {
                 columns={feedingColumns}
                 pagination={false}
                 rowKey="FeedingID"
-                scroll={{ x: 1200 }}  // Adjust this value based on your content
+                scroll={{ x: 0 }}
               />
             </Panel>
           </Collapse>
+
+          {/* Add instruction for scrolling */}
+          <div style={{ textAlign: 'center', marginTop: '10px' }}>
+            <p style={{ fontSize: '14px', color: '#666' }}>
+              Use your finger to scroll to the right to see the rest of the data.
+            </p>
+          </div>
         </div>
       )}
     </div>
