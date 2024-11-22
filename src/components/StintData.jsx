@@ -339,8 +339,15 @@ function StintData() {
 
         keys.forEach((key, index) => {
             const values = lines.slice(1).map(line => line.split(',')[index]);
-            // If the key is "MaxEntries", ensure it only takes the first value
-            json[key] = key === 'MaxEntries' ? values.slice(0, 1) : values;
+
+            // Handle MaxEntries and ButtonWithSize to only take the first value
+            if (key === 'MaxEntries' || key === 'ButtonWithSize') {
+                json[key] = values.slice(0, 1);  // Only take the first value
+            } else if (key === 'size') {
+                json[key] = values.slice(0, 1);  // Ensure size takes the same approach as MaxEntries
+            } else {
+                json[key] = values;
+            }
         });
 
         return json;
@@ -383,7 +390,7 @@ function StintData() {
             Modal.error({
                 title: 'Missing Required Fields',
                 content: (
-                    <div style={{overflowY: 'auto'}}>
+                    <div style={{ overflowY: 'auto' }}>
                         <p>Please fill in the following fields:</p>
                         <ul>
                             {emptyFields.map((field, index) => (

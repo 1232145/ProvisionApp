@@ -1,5 +1,5 @@
-Name,Island,ObserverLocation,Nest,Provider,Recipient,PreySize,PreyItem,MaxEntries
-Alice Johnson,islandName,NYC,P1,BA,A,0.25,H,10
+Name,Island,ObserverLocation,Nest,Provider,Recipient,PreySize,PreyItem,MaxEntries,ButtonWithSize
+Alice Johnson,islandName,NYC,P1,BA,A,0.25,H,2,1000
 Mark Smith,islandName,NYC,P2,BL,B,0.30,U
 Sophia Davis,islandName,LA,P3,FR,C,0.35,R
 Liam Brown,islandName,Miami,P4,BR,D,0.40,S

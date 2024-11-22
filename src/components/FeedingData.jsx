@@ -112,6 +112,7 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, 
             borderRadius: '8px',
             padding: '15px',
             height: 'auto',
+            width: config !== null || config !== undefined ? `${config?.ButtonWithSize[0]}px` : 'auto', //adjustable
             minWidth: '150px',
             backgroundColor: '#f9f9f9',
             boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
