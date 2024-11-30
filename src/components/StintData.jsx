@@ -193,16 +193,16 @@ function StintData() {
     /**
      * Sets the time arrive data to the current time and time depart data to empty
      */
-    const setTimeArrive = () => {
-        setStint({ ...stint, Date_Time_Start: Date.getDate(), Date_Time_End: "" })
-    }
+    const setTimeArrive = (time) => {
+        setStint({ ...stint, Date_Time_Start: time });
+    };
 
     /**
      * Sets the time depart data to the current time
      */
-    const setTimeDepart = () => {
-        setStint({ ...stint, Date_Time_End: Date.getDate() })
-    }
+    const setTimeDepart = (time) => {
+        setStint({ ...stint, Date_Time_End: time });
+    };
 
     /**
      * Sets the feeding data in stintl
@@ -450,13 +450,13 @@ function StintData() {
     useEffect(() => {
         ipcRenderer.on('warn-close', () => {
             const shouldClose = window.confirm('You have unsaved changes. Are you sure you want to exit?');
-            
+
             if (shouldClose) {
                 // Send confirmation to main process to close the window
                 ipcRenderer.send('confirm-close');
             }
         });
-    
+
         // Cleanup when the component is unmounted
         return () => {
             ipcRenderer.removeAllListeners('warn-close');

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button, DatePicker, Input, Row, Col, notification } from 'antd';
-import moment from 'moment'; // Import moment for date formatting
+import moment from 'moment';
 
 function Timer({ setTime, data, label, description, styles }) {
     const [selectedDate, setSelectedDate] = useState(null); // State to store selected date
@@ -17,7 +17,9 @@ function Timer({ setTime, data, label, description, styles }) {
     // Handle the date change and format it
     const handleDateChange = (value) => {
         setSelectedDate(value); // Update the state with the selected date
-        setTime(value ? value.format('MM/DD/YYYY HH:mm') : ''); // Pass the formatted date to the parent
+        const formattedDate = value ? value.format('MM/DD/YYYY HH:mm') : ''; // Format the date
+        setTime(formattedDate); // Pass the formatted date to the parent
+        setTimeInput(formattedDate); // Sync the input field with DatePicker
     };
 
     // Handle the time input change
