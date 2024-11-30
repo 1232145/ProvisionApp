@@ -1,8 +1,10 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 
+let win;
+
 function createWindow() {
-  const win = new BrowserWindow({
+  win = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {
@@ -11,28 +13,27 @@ function createWindow() {
     },
   });
 
-  // win.webContents.openDevTools();
+  // Load the React app (build version)
+  win.loadFile(`${path.join(__dirname, '../build/index.html')}`);
 
-  win.loadFile(
-    `${path.join(__dirname, '../build/index.html')}`
-  );
+  // win.webContents.openDevTools();
 
   let isClosing = false; // To track if the close is confirmed by the user
 
   win.on('close', (e) => {
-      if (!isClosing) {
-          e.preventDefault(); // Prevent the default close behavior
-          win.webContents.send('warn-close'); // Show the close confirmation in React
-          
-          // Listen for user confirmation to close
-          ipcMain.once('confirm-close', () => {
-              isClosing = true; // Mark as confirmed
-              win.close(); // Now close the window
-          });
-      } else {
-          // Allow close if confirmed
-          win.close();
-      }
+    if (!isClosing) {
+      e.preventDefault(); // Prevent the default close behavior
+      win.webContents.send('warn-close'); // Show the close confirmation in React
+
+      // Listen for user confirmation to close
+      ipcMain.once('confirm-close', () => {
+        isClosing = true; // Mark as confirmed
+        win.close(); // Now close the window
+      });
+    } else {
+      // Allow close if confirmed
+      win.close();
+    }
   });
 }
 

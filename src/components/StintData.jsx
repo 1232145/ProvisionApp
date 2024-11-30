@@ -4,7 +4,6 @@ import Species from './stintl/Species'
 import Name from './stintl/Name'
 import ObserverLocation from './stintl/ObserverLocation'
 import DataTable from './stintl/DataTable';
-import Date from '../Date'
 import Timer from './Timer';
 import Comment from './Comment';
 import { saveAs } from 'file-saver';
@@ -153,7 +152,7 @@ function StintData() {
 
     const [config, setConfig] = useState(null);
 
-    const [stintID, setStintID] = useState(`${stint.Island}-${stint.Species}-${stint.Date_Time_Start}-${stint.Name}`)
+    const [stintID, setStintID] = useState(`${stint.Island}-${stint.Species}-${stint.Date_Time_Start}-${stint.Name}`);
 
     //display stintl/feeding data
     const [isOpenF, setIsOpenF] = useState(false);

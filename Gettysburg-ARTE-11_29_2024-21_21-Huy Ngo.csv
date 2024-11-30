@@ -1,0 +1,6 @@
+StintID,Stint_Type,Island,Species,Prey_Size_Method,Prey_Size_Reference,Name,Observer_Location,Date_Time_Start,Date_Time_End,Stint_Comment,FeedingID,Nest,Time_Arrive,Time_Depart,Provider,Recipient,Prey_Item,Prey_Size,Number_of_Items,Plot_Status,Feeding_Comment
+b436nt,Chick Provisioning,Gettysburg,ARTE,Numeric,Culmen length,Huy Ngo,Apple,11/29/2024 21:21,11/28/2024 07:07,None,1,P2,10:22:24,10:25:25,FR,O,U,1.5,4,Inside Plot,
+b436nt,Chick Provisioning,Gettysburg,ARTE,Numeric,Culmen length,Huy Ngo,Apple,11/29/2024 21:21,11/28/2024 07:07,None,1,P2,10:22:24,10:25:25,FR,Y,H,3,4,Inside Plot,
+b436nt,Chick Provisioning,Gettysburg,ARTE,Numeric,Culmen length,Huy Ngo,Apple,11/29/2024 21:21,11/28/2024 07:07,None,1,P2,10:22:24,10:25:25,FR,A,H,0.25,4,Inside Plot,
+b436nt,Chick Provisioning,Gettysburg,ARTE,Numeric,Culmen length,Huy Ngo,Apple,11/29/2024 21:21,11/28/2024 07:07,None,1,P2,10:22:24,10:25:25,FR,A1,U,0.5,4,Inside Plot,
+b436nt,Chick Provisioning,Gettysburg,ARTE,Numeric,Culmen length,Huy Ngo,Apple,11/29/2024 21:21,11/28/2024 07:07,None,2,P5,10:22:30,10:30:31,BR,B,R,1.75,1,Outside Plot,
