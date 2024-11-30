@@ -9,8 +9,9 @@ import Timer from './Timer';
 import Comment from './Comment';
 import { saveAs } from 'file-saver';
 import FeedingData from './FeedingData';
-import { Button, Row, Col, Upload, Modal, message } from 'antd';
-import { UploadOutlined, WarningOutlined } from '@ant-design/icons';
+import { Button, Row, Col, Upload, Modal } from 'antd';
+import { UploadOutlined } from '@ant-design/icons';
+const { ipcRenderer } = window.require('electron');
 
 const styles = {
     startStint: {
@@ -411,13 +412,6 @@ function StintData() {
         const dowloadName = stintID;
 
         saveAs(file, dowloadName);
-
-        try {
-            localStorage.removeItem('stintBackup');
-            localStorage.removeItem('stintBackupTime');
-        } catch (error) {
-            console.error('Error clearing backup:', error);
-        }
     }
 
     const handleOpenClick = (event, type) => {
@@ -452,6 +446,22 @@ function StintData() {
     useEffect(() => {
         setStintID(`${stint.Island}-${stint.Species}-${stint.Date_Time_Start}-${stint.Name}`.replace(" ", "-"));
     }, [stint])
+
+    useEffect(() => {
+        ipcRenderer.on('warn-close', () => {
+            const shouldClose = window.confirm('You have unsaved changes. Are you sure you want to exit?');
+            
+            if (shouldClose) {
+                // Send confirmation to main process to close the window
+                ipcRenderer.send('confirm-close');
+            }
+        });
+    
+        // Cleanup when the component is unmounted
+        return () => {
+            ipcRenderer.removeAllListeners('warn-close');
+        };
+    }, []);
 
     return (
         <div>
