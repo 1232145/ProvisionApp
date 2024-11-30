@@ -220,17 +220,18 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, 
     }
 
     /**
-     * this sets the time arrive data to the indexent time and time depart data to empty
+     * this sets the time arrive data and time depart data to empty
      */
-    const setTimeArrive = () => {
-        setFeeding({ ...feeding, Time_Arrive: Date.getTime(), Time_Depart: "" })
+    const setTimeArrive = (time) => {
+        // Extract only the 'HH:mm' part from the datetime string
+        setFeeding({ ...feeding, Time_Arrive: time, Time_Depart: "" });
     }
 
     /**
-     * this sets the time depart data to the indexent time
+     * this sets the time depart data
      */
-    const setTimeDepart = () => {
-        setFeeding({ ...feeding, Time_Depart: Date.getTime() })
+    const setTimeDepart = (time) => {
+        setFeeding({ ...feeding, Time_Depart: time });
     }
 
     /**
@@ -435,8 +436,8 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, 
                 <div style={styles.headContainer}>
                     <div style={styles.upperMenuContainer}>
                         <div style={styles.timerBtnContainer}>
-                            <Timer setTime={setTimeArrive} data={feeding.Time_Arrive} label="Time start" description="Time start" styles={styles} />
-                            <Timer setTime={setTimeDepart} data={feeding.Time_Depart} label="Time depart" description="Time depart" styles={styles} />
+                            <Timer setTime={setTimeArrive} data={feeding.Time_Arrive} label="Time start" description="Time start" styles={styles} hasDatePicker={false} format='hh:mm:ss' />
+                            <Timer setTime={setTimeDepart} data={feeding.Time_Depart} label="Time depart" description="Time depart" styles={styles} hasDatePicker={false} format='hh:mm:ss' />
                         </div>
 
                         <div style={styles.plotNoItemBtn}>
@@ -444,11 +445,11 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, 
                         </div>
                     </div>
                     <div style={{ ...styles.upperMenuContainer, ...styles.lowerMenuContainer }}>
-                        <div style={{flexShrink: 1, minWidth: '0'}}>
+                        <div style={{ flexShrink: 1, minWidth: '0' }}>
                             <NumberItems setNumberItems={setNumberItems} data={feeding.Number_of_Items} changeIndex={setNIndex} nIndex={nIndex} styles={styles} />
                         </div>
 
-                        <div style={{flexShrink: 1, minWidth: '0'}}>
+                        <div style={{ flexShrink: 1, minWidth: '0' }}>
                             <div style={styles.feedingsContainer}>
                                 <div style={styles.flexRowCenter}>
                                     <p style={{ marginRight: '7.5px' }}>Show Closed Feeding:</p>
