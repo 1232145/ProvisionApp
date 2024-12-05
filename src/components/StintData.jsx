@@ -493,8 +493,8 @@ function StintData() {
                                     <Col xs={24} md={12} style={styles.rightColumn}>
                                         <Name setName={setName} data={stint.Name} styles={styles} config={config} />
                                         <ObserverLocation setObs={setObserverLocation} data={stint.Observer_Location} styles={styles} config={config} />
-                                        <Timer setTime={setTimeArrive} data={stint.Date_Time_Start} label="Start Stint Time" description="Start Stint Time" styles={styles} />
-                                        <Timer setTime={setTimeDepart} data={stint.Date_Time_End} label="End Stint Time" description="End Stint Time" styles={styles} />
+                                        <Timer setTime={setTimeArrive} data={stint.Date_Time_Start} label="Start Stint Time" description="Start Stint Time" styles={styles} hasInput={false} />
+                                        <Timer setTime={setTimeDepart} data={stint.Date_Time_End} label="End Stint Time" description="End Stint Time" styles={styles} hasInput={false} />
                                     </Col>
                                 </Row>
 
