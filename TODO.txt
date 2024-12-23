@@ -1,2 +1,0 @@
-1. Change pop up style for delete items
-2. Fix drop down menu not set to default when button is selected
