@@ -229,6 +229,11 @@ function StintData() {
         return hash.toString(36); // Convert to base-36 for shorter representation
     };
 
+    const handleSwitchToFeeding = () => {
+        setIsOpenF(!isOpenF)
+        ipcRenderer.send('autosave', stint);
+    }
+
     /**
      * Converts json data to a string representation of csv
      * @param {*} json 
@@ -441,6 +446,19 @@ function StintData() {
         reader.readAsText(file);
     }
 
+    const handleLoadLastSave = () => {
+        ipcRenderer.send('check-auto-save');
+
+        // Listen for auto-save data
+        ipcRenderer.on('load-auto-save', (event, data) => {
+            if (data) {
+                setStint(data);
+            } else {
+                console.log('No auto-save data found');
+            }
+        });
+    }
+
     //detect change in stint to create stintID
     useEffect(() => {
         setStintID(`${stint.Island}-${stint.Species}-${stint.Date_Time_Start}-${stint.Name}`.replace(" ", "-"));
@@ -503,7 +521,7 @@ function StintData() {
                                     <Button
                                         type="primary"
                                         style={{ ...styles.navigateBtn, flex: 1, marginRight: '10px' }} // Adjust margin as needed
-                                        onClick={() => setIsOpenF(!isOpenF)}
+                                        onClick={() => handleSwitchToFeeding()}
                                     >
                                         {!isOpenF ? 'Open Feeding' : 'Back to Stint'}
                                     </Button>
@@ -540,6 +558,7 @@ function StintData() {
 
                                 <div style={{ maxWidth: '100%', overflowX: 'auto' }}>
                                     <DataTable stint={stint} />
+                                    <Button style={{ width: '100%' }} onClick={() => handleLoadLastSave()}>Load Save</Button>
                                 </div>
                             </div>
                         </>
@@ -553,7 +572,7 @@ function StintData() {
                                     setFeedings={setFeedings}
                                     feedings={stint.feedingData}
                                     isOpen={isOpenF}
-                                    onToggle={() => setIsOpenF(!isOpenF)}
+                                    onToggle={handleSwitchToFeeding}
                                     styles={styles}
                                     config={config}
                                 />

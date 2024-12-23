@@ -12,7 +12,7 @@ function Timer({
     hasInput = true, // Whether to show the Input
     format = 'MM/DD/YYYY HH:mm', // Default date format
 }) {
-    const [selectedDate, setSelectedDate] = useState(data); 
+    const [selectedDate, setSelectedDate] = useState(data ? moment(data, format) : null);
 
     // Handle DatePicker changes
     const handleDateChange = (value) => {
@@ -32,7 +32,7 @@ function Timer({
         const time = moment().format(format);
         setTime(time); // Set the current time to the parent
 
-        // If we nede a warning pop up for incorrect format:
+        // If we need a warning pop-up for incorrect format:
         // notification.warning({
         //     message: 'Invalid Date Format',
         //     description: `Please enter the date in ${format} format.`,

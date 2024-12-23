@@ -1,7 +1,9 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
+const fs = require('fs');
 
 let win;
+let autoSaveFilePath;
 
 function createWindow() {
   win = new BrowserWindow({
@@ -14,7 +16,10 @@ function createWindow() {
   });
 
   // Load the React app (build version)
-  win.loadFile(`${path.join(__dirname, '../build/index.html')}`);
+  let dir = `${path.join(__dirname, '../build')}`;
+
+  win.loadFile(`${dir}/index.html`);
+  autoSaveFilePath = path.join(`${dir}/auto-save.json`);
 
   // win.webContents.openDevTools();
 
@@ -36,6 +41,44 @@ function createWindow() {
     }
   });
 }
+
+// Check if auto-save exists and send it to the renderer (React)
+ipcMain.on('check-auto-save', () => {
+  fs.readFile(autoSaveFilePath, 'utf-8', (err, data) => {
+    if (err) {
+      console.error('No auto-save file found or error reading the file:', err);
+      // Send null if no auto-save exists
+      win.webContents.send('load-auto-save', null);
+      return;
+    }
+
+    try {
+      // Try to parse JSON content
+      const parsedData = JSON.parse(data);
+      // Send the saved data to the React app
+      win.webContents.send('load-auto-save', parsedData);
+    } catch (parseError) {
+      // Handle JSON parse error (file is not valid JSON)
+      console.error('Error parsing auto-save file:', parseError);
+      // Send null if JSON is invalid
+      win.webContents.send('load-auto-save', null);
+    }
+  });
+});
+
+// Listen for saving data and reset the auto-save file
+ipcMain.on('autosave', (event, data) => {
+  // Ensure data is an object before saving, or initialize it as an empty object
+  const saveData = data || {};
+
+  fs.writeFile(autoSaveFilePath, JSON.stringify(saveData), (err) => {
+    if (err) {
+      console.error('Error saving auto-save:', err);
+    } else {
+      console.log('Auto-save updated');
+    }
+  });
+});
 
 app.whenReady().then(createWindow);
 
