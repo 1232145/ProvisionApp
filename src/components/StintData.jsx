@@ -8,7 +8,7 @@ import Timer from './Timer';
 import Comment from './Comment';
 import { saveAs } from 'file-saver';
 import FeedingData from './FeedingData';
-import { Button, Row, Col, Upload, Modal } from 'antd';
+import { Button, Row, Col, Upload, Modal, notification } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 const { ipcRenderer } = window.require('electron');
 
@@ -447,6 +447,8 @@ function StintData() {
     }
 
     const handleLoadLastSave = () => {
+        // Remove any previously registered listeners before adding a new one
+        ipcRenderer.removeAllListeners('load-auto-save');
         ipcRenderer.send('check-auto-save');
 
         // Listen for auto-save data
@@ -454,7 +456,12 @@ function StintData() {
             if (data) {
                 setStint(data);
             } else {
-                console.log('No auto-save data found');
+                notification.info({
+                    message: 'No Auto-Save Data',
+                    description: 'It looks like there is no auto-save data available at the moment.',
+                    placement: 'topRight',
+                    duration: 1.5,
+                });
             }
         });
     }
@@ -570,6 +577,7 @@ function StintData() {
                                 <FeedingData
                                     initialFeeding={initialFeeding}
                                     setFeedings={setFeedings}
+                                    stint={stint}
                                     feedings={stint.feedingData}
                                     isOpen={isOpenF}
                                     onToggle={handleSwitchToFeeding}

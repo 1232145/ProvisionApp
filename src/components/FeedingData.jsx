@@ -7,14 +7,14 @@ import Provider from './feeding/Provider';
 import Recipient from './feeding/Recipient';
 import Timer from './Timer';
 import Comment from './Comment';
-import './ToggleBtn.css'
 import { useState, useEffect } from 'react';
 import React from 'react';
 import { Button, Input, Checkbox, message, Modal, Collapse } from 'antd';  // Import Ant Design components
 
 const { Panel } = Collapse;
+const { ipcRenderer } = window.require('electron');
 
-function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, styles, config }) {
+function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onToggle, styles, config }) {
     styles = {
         ...styles,
         outerContainer: {
@@ -413,6 +413,7 @@ function FeedingData({ initialFeeding, feedings, setFeedings, isOpen, onToggle, 
         //if there is a change, save that change
         if (feedingTemp !== feeding) {
             handleSaveFeeding(index);
+            ipcRenderer.send('autosave', stint);
         }
     }, [feeding])
 
