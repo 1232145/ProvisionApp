@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -22,6 +22,29 @@ function createWindow() {
   autoSaveFilePath = path.join(`${dir}/auto-save.json`);
 
   // win.webContents.openDevTools();
+
+  promptForAutoSaveDirectory();
+
+  function promptForAutoSaveDirectory() {
+    // Check if the auto-save file path already exists (to determine if the user has already selected a directory)
+    if (!fs.existsSync(autoSaveFilePath)) {
+      dialog.showOpenDialog(win, {
+        properties: ['openDirectory'],
+        title: 'Select a Directory to Save Auto-Save File', // Added title for better user experience
+        buttonLabel: 'Select Folder', // Customize the button label
+      }).then(result => {
+        if (!result.canceled && result.filePaths.length > 0) {
+          // Set the directory path for saving the auto-save file
+          autoSaveFilePath = path.join(result.filePaths[0], 'auto-save.json');
+          console.log(`Auto-save directory set to: ${autoSaveFilePath}`);
+        } else {
+          console.log('No directory selected for auto-save.');
+        }
+      }).catch(err => {
+        console.error('Error selecting directory:', err);
+      });
+    }
+  }
 
   let isClosing = false; // To track if the close is confirmed by the user
 
