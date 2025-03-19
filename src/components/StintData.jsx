@@ -270,20 +270,19 @@ function StintData() {
      * @returns 
      */
     function csvToJson(csv) {
-        const lines = csv.split('\n');
+        const lines = csv.replace(/\r\n/g, '\n').split('\n').filter(line => line.trim() !== '');
         const dataLines = lines.slice(1);
 
         const feedingData = [];
-
         let currentFeedingID = null;
         let currentFeeding = null;
         let currentNumberOfItems = [];
 
         for (const line of dataLines) {
-            const values = line.split(',');
-            const feedingID = values[11];
+            const values = line.split(',').map(value => value.trim()); // Trim whitespace
+            const feedingID = values[11] || null; // Handle missing values
 
-            if (feedingID !== currentFeedingID) {
+            if (feedingID && feedingID !== currentFeedingID) {
                 if (currentFeedingID !== null) {
                     currentFeeding.Number_of_Items = currentNumberOfItems;
                     feedingData.push(currentFeeding);
@@ -291,46 +290,51 @@ function StintData() {
                 currentFeedingID = feedingID;
                 currentFeeding = {
                     FeedingID: feedingID,
-                    Nest: values[12],
-                    Time_Arrive: values[13],
-                    Time_Depart: values[14],
-                    Provider: values[15],
+                    Nest: values[12] || null,
+                    Time_Arrive: values[13] || null,
+                    Time_Depart: values[14] || null,
+                    Provider: values[15] || null,
                 };
                 currentNumberOfItems = [];
             }
 
-            currentNumberOfItems.push({
-                Recipient: values[16],
-                Prey_Item: values[17],
-                Prey_Size: values[18],
-            });
+            if (values[16] || values[17] || values[18]) { // Ensure it's not an empty entry
+                currentNumberOfItems.push({
+                    Recipient: values[16] || null,
+                    Prey_Item: values[17] || null,
+                    Prey_Size: values[18] || null,
+                });
+            }
 
-            currentFeeding.Plot_Status = values[20];
-            currentFeeding.Comment = values[21];
+            currentFeeding.Plot_Status = values[20] || null;
+            currentFeeding.Comment = values[21] || null;
         }
 
-        currentFeeding.Number_of_Items = currentNumberOfItems;
-        feedingData.push(currentFeeding);
+        if (currentFeeding) {
+            currentFeeding.Number_of_Items = currentNumberOfItems;
+            feedingData.push(currentFeeding);
+        }
 
-        const stintData = dataLines[0].split(',');
+        const stintData = dataLines.length > 0 ? dataLines[0].split(',').map(value => value.trim()) : [];
 
         const jsonObject = {
-            StintID: stintData[0],
-            Stint_Type: stintData[1],
-            Island: stintData[2],
-            Species: stintData[3],
-            Prey_Size_Method: stintData[4],
-            Prey_Size_Reference: stintData[5],
-            Name: stintData[6],
-            Observer_Location: stintData[7],
-            Date_Time_Start: stintData[8],
-            Date_Time_End: stintData[9],
-            Comment: stintData[10],
+            StintID: stintData[0] || null,
+            Stint_Type: stintData[1] || null,
+            Island: stintData[2] || null,
+            Species: stintData[3] || null,
+            Prey_Size_Method: stintData[4] || null,
+            Prey_Size_Reference: stintData[5] || null,
+            Name: stintData[6] || null,
+            Observer_Location: stintData[7] || null,
+            Date_Time_Start: stintData[8] || null,
+            Date_Time_End: stintData[9] || null,
+            Comment: stintData[10] || null,
             feedingData: feedingData,
         };
 
         return jsonObject;
     }
+
 
     /**
      * Converts CSV data to a config object
@@ -338,18 +342,18 @@ function StintData() {
      * @returns 
      */
     function configToJson(csv) {
-        const lines = csv.split('\n').filter(line => line.trim() !== '');
+        const lines = csv.replace(/\r\n/g, '\n').split('\n').filter(line => line.trim() !== '');
         const keys = lines[0].split(',');
         const json = {};
 
         keys.forEach((key, index) => {
-            const values = lines.slice(1).map(line => line.split(',')[index]);
+            const values = lines.slice(1)
+                .map(line => line.split(',')[index]?.trim())  // Trim and handle undefined values
+                .filter(value => value !== undefined && value !== '');  // Filter out empty values
 
             // Handle MaxEntries and ButtonWithSize to only take the first value
-            if (key === 'MaxEntries' || key === 'ButtonWithSize') {
-                json[key] = values.slice(0, 1);  // Only take the first value
-            } else if (key === 'size') {
-                json[key] = values.slice(0, 1);  // Ensure size takes the same approach as MaxEntries
+            if (key === 'MaxEntries' || key === 'ButtonWithSize' || key === 'size') {
+                json[key] = values.length > 0 ? values[0] : null;  // Ensure only the first valid value is taken
             } else {
                 json[key] = values;
             }
@@ -419,52 +423,69 @@ function StintData() {
     }
 
     const handleOpenClick = (event, type) => {
-        const file = event.target.files[0];
-        if (!file) return;
+        try {
+            const file = event.target.files[0];
+            if (!file) return;
 
-        const reader = new FileReader();
+            const reader = new FileReader();
 
-        reader.onload = (e) => {
-            const csv = e.target.result;
+            reader.onload = (e) => {
+                try {
+                    const csv = e.target.result;
 
-            if (type === 'stint') {
-                const stint = csvToJson(csv);
+                    if (type === 'stint') {
+                        const stint = csvToJson(csv);
+                        setStint(stint);
+                    }
+                    else if (type === 'config') {
+                        const config = configToJson(csv);
+                        setConfig(config);
+                    }
+                } catch (error) {
+                    console.error('Error parsing CSV:', error);
+                    alert('Error processing the CSV file. Please check the format.');
+                }
+            };
 
-                setStint(stint);
-            }
-            else if (type === 'config') {
-                const config = configToJson(csv);
+            reader.onerror = (error) => {
+                console.error('Error reading file:', error);
+                alert('Error reading the CSV file.');
+            };
 
-                setConfig(config);
-            }
-        };
-
-        reader.onerror = () => {
-            alert('Error reading the CSV file.');
-        };
-
-        reader.readAsText(file);
-    }
+            reader.readAsText(file);
+        } catch (error) {
+            console.error('Unexpected error:', error);
+            alert('An unexpected error occurred. Please try again.');
+        }
+    };
 
     const handleLoadLastSave = () => {
-        // Remove any previously registered listeners before adding a new one
-        ipcRenderer.removeAllListeners('load-auto-save');
-        ipcRenderer.send('check-auto-save');
+        try {
+            ipcRenderer.removeAllListeners('load-auto-save');
+            ipcRenderer.send('check-auto-save');
 
-        // Listen for auto-save data
-        ipcRenderer.on('load-auto-save', (event, data) => {
-            if (data) {
-                setStint(data);
-            } else {
-                notification.info({
-                    message: 'No Auto-Save Data',
-                    description: 'It looks like there is no auto-save data available at the moment.',
-                    placement: 'topRight',
-                    duration: 1.5,
-                });
-            }
-        });
-    }
+            ipcRenderer.on('load-auto-save', (event, data) => {
+                try {
+                    if (data) {
+                        setStint(data);
+                    } else {
+                        notification.info({
+                            message: 'No Auto-Save Data',
+                            description: 'It looks like there is no auto-save data available at the moment.',
+                            placement: 'topRight',
+                            duration: 1.5,
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error loading auto-save data:', error);
+                    alert('Error loading auto-save data.');
+                }
+            });
+        } catch (error) {
+            console.error('Unexpected error:', error);
+            alert('An unexpected error occurred. Please try again.');
+        }
+    };
 
     //detect change in stint to create stintID
     useEffect(() => {
