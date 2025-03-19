@@ -8,7 +8,7 @@ import Timer from './Timer';
 import Comment from './Comment';
 import { saveAs } from 'file-saver';
 import FeedingData from './FeedingData';
-import { Button, Row, Col, Upload, Modal, notification } from 'antd';
+import { Button, Row, Col, Upload, Modal, notification, message } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 const { ipcRenderer } = window.require('electron');
 
@@ -265,22 +265,46 @@ function StintData() {
     };
 
     /**
-     * Converts csv data to stint JSON object
-     * @param {*} csv 
-     * @returns 
+     * Converts CSV data to stint JSON object with validation
+     * @param {string} csv - CSV data as a string
+     * @returns {object|null} JSON object or null if format is incorrect
      */
     function csvToJson(csv) {
         const lines = csv.replace(/\r\n/g, '\n').split('\n').filter(line => line.trim() !== '');
-        const dataLines = lines.slice(1);
+        if (lines.length < 2) {
+            console.error("Invalid CSV: Not enough data.");
+            return stint;
+        }
 
+        // Define the required headers in order
+        const requiredHeaders = [
+            "StintID", "Stint_Type", "Island", "Species", "Prey_Size_Method", "Prey_Size_Reference",
+            "Name", "Observer_Location", "Date_Time_Start", "Date_Time_End", "Stint_Comment",
+            "FeedingID", "Nest", "Time_Arrive", "Time_Depart", "Provider", "Recipient",
+            "Prey_Item", "Prey_Size", "Number_of_Items", "Plot_Status", "Feeding_Comment"
+        ];
+
+        // Extract headers from CSV
+        const headers = lines[0].split(',').map(header => header.trim());
+
+        // Validate headers
+        const missingHeaders = requiredHeaders.filter(header => !headers.includes(header));
+        if (missingHeaders.length > 0) {
+            message.error(`Invalid CSV: Missing headers -> ${missingHeaders.join(", ")}`);
+            return stint;
+        }
+
+        const dataLines = lines.slice(1);
         const feedingData = [];
         let currentFeedingID = null;
         let currentFeeding = null;
         let currentNumberOfItems = [];
 
         for (const line of dataLines) {
-            const values = line.split(',').map(value => value.trim()); // Trim whitespace
-            const feedingID = values[11] || null; // Handle missing values
+            const values = line.split(',').map(value => value.trim());
+            const rowData = Object.fromEntries(headers.map((key, index) => [key, values[index] || null]));
+
+            const feedingID = rowData["FeedingID"];
 
             if (feedingID && feedingID !== currentFeedingID) {
                 if (currentFeedingID !== null) {
@@ -290,24 +314,23 @@ function StintData() {
                 currentFeedingID = feedingID;
                 currentFeeding = {
                     FeedingID: feedingID,
-                    Nest: values[12] || null,
-                    Time_Arrive: values[13] || null,
-                    Time_Depart: values[14] || null,
-                    Provider: values[15] || null,
+                    Nest: rowData["Nest"],
+                    Time_Arrive: rowData["Time_Arrive"],
+                    Time_Depart: rowData["Time_Depart"],
+                    Provider: rowData["Provider"],
+                    Plot_Status: rowData["Plot_Status"],
+                    Comment: rowData["Feeding_Comment"]
                 };
                 currentNumberOfItems = [];
             }
 
-            if (values[16] || values[17] || values[18]) { // Ensure it's not an empty entry
+            if (rowData["Recipient"] || rowData["Prey_Item"] || rowData["Prey_Size"]) {
                 currentNumberOfItems.push({
-                    Recipient: values[16] || null,
-                    Prey_Item: values[17] || null,
-                    Prey_Size: values[18] || null,
+                    Recipient: rowData["Recipient"],
+                    Prey_Item: rowData["Prey_Item"],
+                    Prey_Size: rowData["Prey_Size"]
                 });
             }
-
-            currentFeeding.Plot_Status = values[20] || null;
-            currentFeeding.Comment = values[21] || null;
         }
 
         if (currentFeeding) {
@@ -315,45 +338,57 @@ function StintData() {
             feedingData.push(currentFeeding);
         }
 
-        const stintData = dataLines.length > 0 ? dataLines[0].split(',').map(value => value.trim()) : [];
+        const firstRowData = Object.fromEntries(headers.map((key, index) => [key, dataLines[0]?.split(',')[index]?.trim() || null]));
 
         const jsonObject = {
-            StintID: stintData[0] || null,
-            Stint_Type: stintData[1] || null,
-            Island: stintData[2] || null,
-            Species: stintData[3] || null,
-            Prey_Size_Method: stintData[4] || null,
-            Prey_Size_Reference: stintData[5] || null,
-            Name: stintData[6] || null,
-            Observer_Location: stintData[7] || null,
-            Date_Time_Start: stintData[8] || null,
-            Date_Time_End: stintData[9] || null,
-            Comment: stintData[10] || null,
-            feedingData: feedingData,
+            StintID: firstRowData["StintID"],
+            Stint_Type: firstRowData["Stint_Type"],
+            Island: firstRowData["Island"],
+            Species: firstRowData["Species"],
+            Prey_Size_Method: firstRowData["Prey_Size_Method"],
+            Prey_Size_Reference: firstRowData["Prey_Size_Reference"],
+            Name: firstRowData["Name"],
+            Observer_Location: firstRowData["Observer_Location"],
+            Date_Time_Start: firstRowData["Date_Time_Start"],
+            Date_Time_End: firstRowData["Date_Time_End"],
+            Comment: firstRowData["Stint_Comment"],
+            feedingData: feedingData
         };
 
         return jsonObject;
     }
 
-
     /**
      * Converts CSV data to a config object
      * @param {*} csv 
-     * @returns 
+     * @returns {object|null} JSON object or null if format is incorrect
      */
     function configToJson(csv) {
         const lines = csv.replace(/\r\n/g, '\n').split('\n').filter(line => line.trim() !== '');
-        const keys = lines[0].split(',');
-        const json = {};
+        if (lines.length < 2) {
+            console.error("Invalid CSV: Not enough data.");
+            return config;
+        }
 
-        keys.forEach((key, index) => {
+        const requiredHeaders = ["Name", "Island", "ObserverLocation", "Nest", "Provider", "Recipient", "PreySize", "PreyItem", "MaxEntries", "ButtonWithSize"];
+        const headers = lines[0].split(',').map(header => header.trim());
+
+        // Check if all required headers exist
+        const missingHeaders = requiredHeaders.filter(header => !headers.includes(header));
+        if (missingHeaders.length > 0) {
+            message.error(`Invalid CSV: Missing headers -> ${missingHeaders.join(", ")}`);
+            return config;
+        }
+
+        const json = {};
+        headers.forEach((key, index) => {
             const values = lines.slice(1)
                 .map(line => line.split(',')[index]?.trim())  // Trim and handle undefined values
                 .filter(value => value !== undefined && value !== '');  // Filter out empty values
 
-            // Handle MaxEntries and ButtonWithSize to only take the first value
-            if (key === 'MaxEntries' || key === 'ButtonWithSize' || key === 'size') {
-                json[key] = values.length > 0 ? values[0] : null;  // Ensure only the first valid value is taken
+            // Ensure only the first valid value is taken for specific keys
+            if (["MaxEntries", "ButtonWithSize", "size"].includes(key)) {
+                json[key] = values.length > 0 ? values[0] : null;
             } else {
                 json[key] = values;
             }
@@ -442,19 +477,19 @@ function StintData() {
                         setConfig(config);
                     }
                 } catch (error) {
-                    console.error('Error parsing CSV:', error);
+                    message.error('Error parsing CSV:', error);
                     alert('Error processing the CSV file. Please check the format.');
                 }
             };
 
             reader.onerror = (error) => {
-                console.error('Error reading file:', error);
+                message.error('Error reading file:', error);
                 alert('Error reading the CSV file.');
             };
 
             reader.readAsText(file);
         } catch (error) {
-            console.error('Unexpected error:', error);
+            message.error('Unexpected error:', error);
             alert('An unexpected error occurred. Please try again.');
         }
     };
@@ -477,12 +512,12 @@ function StintData() {
                         });
                     }
                 } catch (error) {
-                    console.error('Error loading auto-save data:', error);
+                    message.error('Error loading auto-save data:', error);
                     alert('Error loading auto-save data.');
                 }
             });
         } catch (error) {
-            console.error('Unexpected error:', error);
+            message.error('Unexpected error:', error);
             alert('An unexpected error occurred. Please try again.');
         }
     };
