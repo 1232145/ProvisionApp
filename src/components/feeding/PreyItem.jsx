@@ -8,13 +8,22 @@ function PreyItem({ setPreyItem, data, styles, config }) {
     "M", "MF", "O", "P", "PL", "PS", "PUF", "Q", "RF", "RG", "ROS", "RS", "SB", "SH", 
     "SM", "SN", "SP", "SS", "SY", "T", "TC", "U", "UF1", "UF1-SI2016", "UFEER2016", 
     "UF-PI2017", "UFSI2015", "UG", "LA/UF", "UI", "V", "W", "X", "Y", "Z"];
+
+  const allPreyItems = config?.PreyItem ? config.PreyItem: defaultPreyItems;
+  
+  const num = Math.min( 5, allPreyItems.length );
   
   // Determine prey items based on config or use default values
-  const initialPreyItems = config?.PreyItem ? config.PreyItem.slice(0, config.MaxEntries[0]) : defaultPreyItems.slice(0, 10); // Take first 10 or default
+  const initialPreyItems = allPreyItems.slice(0, num) // Take first 10 or default
   const [preyI, setPreyI] = useState(initialPreyItems);
   
   // Determine dropdown values based on config
-  const dropdownValues = config?.PreyItem ? config.PreyItem.slice(config.MaxEntries[0]) : defaultPreyItems.slice(10);
+  const dropdownValues = allPreyItems.slice(num);
+  
+  // Add "Other" option if it is not already in config file
+  if(!dropdownValues.includes("Other")){
+    dropdownValues.push("Other")
+  }
 
   return (
     <div style={styles.feedingItemContainer}>
