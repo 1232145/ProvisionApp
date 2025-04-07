@@ -16,14 +16,14 @@ function Provider({ setProvider, data, styles, config }) {
   // Determine dropdown values based on config
   const dropdownValues = allProviders.slice(num)
 
-  // Add "Other" option if it is not already in config file
-  if(!dropdownValues.includes("Other")){
-    dropdownValues.push("Other")
-  }
-
   return (
     <div style={styles.feedingItemContainer}>
-      <p>Provider: {data}</p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px'}}>
+        <label htmlFor='provider-input'>Provider: </label>
+        <input id='provider-input' style={{width: "80%"}} value={data} onChange={(e) => setProvider(e.target.value)} />
+      </div>
+      <br />
+
       <div style={styles.feedingItemButtonContainer}>
         {providers.map((item, index) => (
           <Button

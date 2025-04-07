@@ -19,14 +19,14 @@ function Nest({ setNest, data, styles, config }) {
   // initialNests.append("Other")
   const dropdownValues = allNests.slice(num)
 
-  // Add "Other" option if it is not already in config file
-  if(!dropdownValues.includes("Other")){
-    dropdownValues.push("Other")
-  }
-
   return (
     <div style={styles.feedingItemContainer}>
-      <p>Nest: {data}</p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px'}}>
+        <label htmlFor='nest-input'>Nest: </label>
+        <input id='nest-input' style={{width: "80%"}} value={data} onChange={(e) => setNest(e.target.value)} />
+      </div>
+      <br />
+
       <div style={styles.feedingItemButtonContainer}>
         {nests.map((item, index) => (
           <Button

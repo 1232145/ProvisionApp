@@ -16,14 +16,14 @@ function Recipient({ setRecipient, data, styles, config }) {
   // Determine dropdown values based on config
   const dropdownValues = allRecipients.slice(num)
 
-  // Add "Other" option if it is not already in config file
-  if(!dropdownValues.includes("Other")){
-    dropdownValues.push("Other")
-  }
-
   return (
     <div style={styles.feedingItemContainer}>
-      <p>Recipient: {data}</p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px'}}>
+        <label htmlFor='recipient-input'>Recipient: </label>
+        <input id='recipient-input' style={{width: "80%"}} value={data} onChange={(e) => setRecipient(e.target.value)} />
+      </div>
+      <br />
+
       <div style={styles.feedingItemButtonContainer}>
         {recip.map((item, index) => (
           <Button 

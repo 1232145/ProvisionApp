@@ -16,14 +16,16 @@ function PreySize({ setPreySize, data, styles, config }) {
   // Determine dropdown values based on config
   const dropdownValues = allPreySizes.slice(num); // Remaining or default
 
-  // Add "Other" option if it is not already in config file
-  if(!dropdownValues.includes("Other")){
-    dropdownValues.push("Other")
-  }
-
+ 
   return (
     <div style={styles.feedingItemContainer}>
-      <p>Prey Size: {data}</p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px'}}>
+        <label htmlFor='preySize-input'>Prey Size: </label>
+        <input id='preySize-input' style={{width: "80%"}} value={data} onChange={(e) => setPreySize(e.target.value)} />
+      </div>
+      <br />  
+
+
       <div style={styles.feedingItemButtonContainer}>
         {preySizes.map((item, index) => (
           <Button

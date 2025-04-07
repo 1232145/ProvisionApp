@@ -19,15 +19,15 @@ function PreyItem({ setPreyItem, data, styles, config }) {
   
   // Determine dropdown values based on config
   const dropdownValues = allPreyItems.slice(num);
-  
-  // Add "Other" option if it is not already in config file
-  if(!dropdownValues.includes("Other")){
-    dropdownValues.push("Other")
-  }
 
   return (
     <div style={styles.feedingItemContainer}>
-      <p>Prey Item: {data}</p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px'}}>
+        <label htmlFor='preyItem-input'>Prey Item: </label>
+        <input id='preyItem-input' style={{width: "80%"}} value={data} onChange={(e) => setPreyItem(e.target.value)} />
+      </div>
+      <br />
+
       <div style={styles.feedingItemButtonContainer}>
         {preyI.map((item, index) => (
           <Button 
