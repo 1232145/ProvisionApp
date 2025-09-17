@@ -7,12 +7,25 @@ import Provider from './feeding/Provider';
 import Recipient from './feeding/Recipient';
 import Timer from './Timer';
 import Comment from './Comment';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import React from 'react';
 import { Button, Input, Checkbox, message, Modal, Collapse } from 'antd';  // Import Ant Design components
-const { ipcRenderer } = window.require('electron');
+import { useAutoSave } from '../hooks/useAutoSave';
+
+// Default arrays for feeding components (moved outside to avoid re-creation)
+const defaultProviders = ["BA", "BL", "BR", "FR", "S", "U", "UA", "UB", "UC", "X", "AA", "AB", "BMB", "KF", "KM", "SMB", "TA"];
+const defaultRecipients = ["A", "A1", "B", "UC", "U", "K", "O", "S", "M", "Y", "C", "N", "R", "T", "UA"];
+const defaultPreySizes = ["0.25", "0.5", "0.75", "1", "1.25", "1.5", "1.75", "2", "2.25", "2.5", "2.75", "3", "3.25", "Unknown"];
+const defaultPreyItems = ["H", "U", "R", "S", "UF", "A", "HD", "T", "H or R", "E", "ALE", "AS", "B", "BR", "C", "CA", "CH", "CU", "CUS", "D", "DR", "EEL", "EP", "EW", "F", 
+  "FS", "G", "GH", "I", "J", "K", "KF", "L", "LA/H", "LA/HD", "LA/R", "LA/S", "LA/UF", 
+  "M", "MF", "O", "P", "PL", "PS", "PUF", "Q", "RF", "RG", "ROS", "RS", "SB", "SH", 
+  "SM", "SN", "SP", "SS", "SY", "T", "TC", "U", "UF1", "UF1-SI2016", "UFEER2016", 
+  "UF-PI2017", "UFSI2015", "UG", "LA/UF", "UI", "V", "W", "X", "Y", "Z"];
+const defaultNests = ["P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9", "P10"];
 
 function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onToggle, styles, config }) {
+    // Initialize debounced auto-save hook (1 second delay)
+    const debouncedAutoSave = useAutoSave(1000);
     styles = {
         ...styles,
         outerContainer: {
@@ -130,6 +143,23 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
 
     // Max entries for feeding data dropdowns (default: 10)
     const [maxEntries, setMaxEntries] = useState(10);
+
+    // Memoized sliced config - computed once, eliminates 5x re-renders in child components
+    const slicedConfig = useMemo(() => {
+        return {
+            Provider: config?.Provider ? config.Provider.slice(0, maxEntries) : defaultProviders.slice(0, maxEntries),
+            Recipient: config?.Recipient ? config.Recipient.slice(0, maxEntries) : defaultRecipients.slice(0, maxEntries),
+            PreySize: config?.PreySize ? config.PreySize.slice(0, maxEntries) : defaultPreySizes.slice(0, maxEntries),
+            PreyItem: config?.PreyItem ? config.PreyItem.slice(0, maxEntries) : defaultPreyItems.slice(0, maxEntries),
+            Nest: config?.Nest ? config.Nest.slice(0, maxEntries) : defaultNests.slice(0, maxEntries),
+            // Include dropdown values (remaining items)
+            ProviderDropdown: config?.Provider ? config.Provider.slice(maxEntries) : defaultProviders.slice(maxEntries),
+            RecipientDropdown: config?.Recipient ? config.Recipient.slice(maxEntries) : defaultRecipients.slice(maxEntries),
+            PreySizeDropdown: config?.PreySize ? config.PreySize.slice(maxEntries) : defaultPreySizes.slice(maxEntries),
+            PreyItemDropdown: config?.PreyItem ? config.PreyItem.slice(maxEntries) : defaultPreyItems.slice(maxEntries),
+            NestDropdown: config?.Nest ? config.Nest.slice(maxEntries) : defaultNests.slice(maxEntries),
+        };
+    }, [config, maxEntries]);
 
     //for current feeding data index
     const [index, setIndex] = useState(0);
@@ -421,13 +451,13 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
         }
     }, [feedings.length])
 
-    // Auto-save whenever feeding data changes
+    // Auto-save whenever feeding data changes (debounced)
     useEffect(() => {
         if (feedingTemp !== feeding) {
             handleSaveFeeding(index);
-            ipcRenderer.send('autosave', stint);
+            debouncedAutoSave(stint);
         }
-    }, [feeding])
+    }, [feeding, feedingTemp, handleSaveFeeding, index, stint, debouncedAutoSave])
 
     return (
         <>
@@ -535,11 +565,11 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
                 </div>
 
                 <div style={styles.stintlContainer}>
-                    <Nest setNest={setNest} data={feeding.Nest} styles={styles} config={config} maxEntries={maxEntries} />
-                    <Provider setProvider={setProvider} data={feeding.Provider} styles={styles} config={config} maxEntries={maxEntries} />
-                    <Recipient setRecipient={setRecipient} data={feeding.Number_of_Items[nIndex].Recipient} styles={styles} config={config} maxEntries={maxEntries} />
-                    <PreySize setPreySize={setPreySize} data={feeding.Number_of_Items[nIndex].Prey_Size} styles={styles} config={config} maxEntries={maxEntries} />
-                    <PreyItem setPreyItem={setPreyItem} data={feeding.Number_of_Items[nIndex].Prey_Item} styles={styles} config={config} maxEntries={maxEntries} />
+                    <Nest setNest={setNest} data={feeding.Nest} styles={styles} slicedConfig={slicedConfig} />
+                    <Provider setProvider={setProvider} data={feeding.Provider} styles={styles} slicedConfig={slicedConfig} />
+                    <Recipient setRecipient={setRecipient} data={feeding.Number_of_Items[nIndex].Recipient} styles={styles} slicedConfig={slicedConfig} />
+                    <PreySize setPreySize={setPreySize} data={feeding.Number_of_Items[nIndex].Prey_Size} styles={styles} slicedConfig={slicedConfig} />
+                    <PreyItem setPreyItem={setPreyItem} data={feeding.Number_of_Items[nIndex].Prey_Item} styles={styles} slicedConfig={slicedConfig} />
                 </div>
 
                 <div>

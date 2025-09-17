@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Button from '../Button';
 
 // Default prey items outside component to avoid re-creation
@@ -8,20 +8,10 @@ const defaultPreyItems = ["H", "U", "R", "S", "UF", "A", "HD", "T", "H or R", "E
   "SM", "SN", "SP", "SS", "SY", "T", "TC", "U", "UF1", "UF1-SI2016", "UFEER2016", 
   "UF-PI2017", "UFSI2015", "UG", "LA/UF", "UI", "V", "W", "X", "Y", "Z"];
 
-function PreyItem({ setPreyItem, data, styles, config, maxEntries = 10 }) {
-  
-  // Determine prey items based on config or use default values, using maxEntries
-  const initialPreyItems = config?.PreyItem ? config.PreyItem.slice(0, maxEntries) : defaultPreyItems.slice(0, maxEntries);
-  const [preyI, setPreyI] = useState(initialPreyItems);
-  
-  // Update prey items when maxEntries changes
-  useEffect(() => {
-    const newPreyItems = config?.PreyItem ? config.PreyItem.slice(0, maxEntries) : defaultPreyItems.slice(0, maxEntries);
-    setPreyI(newPreyItems);
-  }, [maxEntries, config]);
-  
-  // Determine dropdown values based on config
-  const dropdownValues = config?.PreyItem ? config.PreyItem.slice(maxEntries) : defaultPreyItems.slice(maxEntries);
+function PreyItem({ setPreyItem, data, styles, slicedConfig }) {
+  // Use pre-computed sliced data from parent (eliminates re-renders and useEffect)
+  const preyI = slicedConfig?.PreyItem || defaultPreyItems.slice(0, 10);
+  const dropdownValues = slicedConfig?.PreyItemDropdown || defaultPreyItems.slice(10);
 
   return (
     <div style={styles.feedingItemContainer}>
