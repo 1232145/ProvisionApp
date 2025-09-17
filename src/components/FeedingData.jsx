@@ -11,6 +11,9 @@ import { useState, useEffect, useMemo, useReducer } from 'react';
 import React from 'react';
 import { Button, Input, Checkbox, message, Modal, Collapse } from 'antd';  // Import Ant Design components
 import { useAutoSave } from '../hooks/useAutoSave';
+import { ConfigProvider } from '../contexts/ConfigContext';
+import { StylesProvider } from '../contexts/StylesContext';
+import { FeedingProvider } from '../contexts/FeedingContext';
 
 // Default arrays for feeding components (moved outside to avoid re-creation)
 const defaultProviders = ["BA", "BL", "BR", "FR", "S", "U", "UA", "UB", "UC", "X", "AA", "AB", "BMB", "KF", "KM", "SMB", "TA"];
@@ -310,6 +313,24 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
     const setNIndex = (value) => {
         dispatchFeeding({ type: 'SET_NINDEX', payload: value });
     }
+
+    // Memoized feeding actions for context (prevents unnecessary re-renders)
+    const feedingActions = useMemo(() => ({
+        setPlot,
+        setNest,
+        setProvider,
+        setNumberItems,
+        setRecipient,
+        setPreySize,
+        setPreyItem,
+        setTimeArrive,
+        setTimeDepart,
+        setComment,
+        setNIndex,
+        handleSaveFeeding,
+        handleNewFeeding,
+        handleOpenFeeding
+    }), []);
 
     /**
      * saves feeding tab at index
@@ -618,11 +639,26 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
                 </div>
 
                 <div style={styles.stintlContainer}>
-                    <Nest setNest={setNest} data={feeding.Nest} styles={styles} slicedConfig={slicedConfig} />
-                    <Provider setProvider={setProvider} data={feeding.Provider} styles={styles} slicedConfig={slicedConfig} />
-                    <Recipient setRecipient={setRecipient} data={feeding.Number_of_Items[nIndex].Recipient} styles={styles} slicedConfig={slicedConfig} />
-                    <PreySize setPreySize={setPreySize} data={feeding.Number_of_Items[nIndex].Prey_Size} styles={styles} slicedConfig={slicedConfig} />
-                    <PreyItem setPreyItem={setPreyItem} data={feeding.Number_of_Items[nIndex].Prey_Item} styles={styles} slicedConfig={slicedConfig} />
+                    <ConfigProvider
+                        config={config}
+                        slicedConfig={slicedConfig}
+                        maxEntries={maxEntries}
+                        setMaxEntries={setMaxEntries}
+                    >
+                        <StylesProvider styles={styles}>
+                            <FeedingProvider
+                                feedingState={feedingState}
+                                dispatchFeeding={dispatchFeeding}
+                                feedingActions={feedingActions}
+                            >
+                                <Nest data={feeding.Nest} />
+                                <Provider data={feeding.Provider} />
+                                <Recipient data={feeding.Number_of_Items[nIndex].Recipient} />
+                                <PreySize data={feeding.Number_of_Items[nIndex].Prey_Size} />
+                                <PreyItem data={feeding.Number_of_Items[nIndex].Prey_Item} />
+                            </FeedingProvider>
+                        </StylesProvider>
+                    </ConfigProvider>
                 </div>
 
                 <div>

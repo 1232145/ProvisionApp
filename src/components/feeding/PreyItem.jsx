@@ -1,5 +1,8 @@
 import React from 'react';
 import Button from '../Button';
+import { useConfig } from '../../contexts/ConfigContext';
+import { useStyles } from '../../contexts/StylesContext';
+import { useFeeding } from '../../contexts/FeedingContext';
 
 // Default prey items outside component to avoid re-creation
 const defaultPreyItems = ["H", "U", "R", "S", "UF", "A", "HD", "T", "H or R", "E", "ALE", "AS", "B", "BR", "C", "CA", "CH", "CU", "CUS", "D", "DR", "EEL", "EP", "EW", "F", 
@@ -8,8 +11,13 @@ const defaultPreyItems = ["H", "U", "R", "S", "UF", "A", "HD", "T", "H or R", "E
   "SM", "SN", "SP", "SS", "SY", "T", "TC", "U", "UF1", "UF1-SI2016", "UFEER2016", 
   "UF-PI2017", "UFSI2015", "UG", "LA/UF", "UI", "V", "W", "X", "Y", "Z"];
 
-function PreyItem({ setPreyItem, data, styles, slicedConfig }) {
-  // Use pre-computed sliced data from parent (eliminates re-renders and useEffect)
+function PreyItem({ data }) {
+  // Use context hooks instead of props (eliminates prop drilling)
+  const { slicedConfig } = useConfig();
+  const styles = useStyles();
+  const { setPreyItem } = useFeeding();
+  
+  // Use pre-computed sliced data from context
   const preyI = slicedConfig?.PreyItem || defaultPreyItems.slice(0, 10);
   const dropdownValues = slicedConfig?.PreyItemDropdown || defaultPreyItems.slice(10);
 

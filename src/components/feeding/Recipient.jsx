@@ -1,11 +1,19 @@
 import React from 'react';
 import Button from '../Button';
+import { useConfig } from '../../contexts/ConfigContext';
+import { useStyles } from '../../contexts/StylesContext';
+import { useFeeding } from '../../contexts/FeedingContext';
 
 // Default recipient values outside component to avoid re-creation
 const defaultRecipients = ["A", "A1", "B", "UC", "U", "K", "O", "S", "M", "Y", "C", "N", "R", "T", "UA"];
 
-function Recipient({ setRecipient, data, styles, slicedConfig }) {
-  // Use pre-computed sliced data from parent (eliminates re-renders and useEffect)
+function Recipient({ data }) {
+  // Use context hooks instead of props (eliminates prop drilling)
+  const { slicedConfig } = useConfig();
+  const styles = useStyles();
+  const { setRecipient } = useFeeding();
+  
+  // Use pre-computed sliced data from context
   const recip = slicedConfig?.Recipient || defaultRecipients.slice(0, 10);
   const dropdownValues = slicedConfig?.RecipientDropdown || defaultRecipients.slice(10);
 
