@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import { Button, Table, Collapse } from 'antd';
-
-const { Panel } = Collapse;
 const styles = {
   column: {
     maxWidth: '70px',
@@ -40,6 +38,10 @@ function DataTable(props) {
   };
 
   const stintColumns = [
+    {
+      title: '#', key: 'rownum', width: 60,
+      render: (text, record, index) => (index + 1)
+    },
     {
       title: 'Type', dataIndex: 'Stint_Type', key: 'Stint_Type', width: 150,
       render: text => (
@@ -81,7 +83,15 @@ function DataTable(props) {
       )
     },
     {
-      title: 'First Name', dataIndex: 'Name', key: 'Name', width: 150,
+      title: 'First Name', dataIndex: 'First_Name', key: 'First_Name', width: 150,
+      render: text => (
+        <div style={styles.column}>
+          {text}
+        </div>
+      )
+    },
+    {
+      title: 'Last Name', dataIndex: 'Last_Name', key: 'Last_Name', width: 150,
       render: text => (
         <div style={styles.column}>
           {text}
@@ -116,6 +126,7 @@ function DataTable(props) {
 
 
   const feedingColumns = [
+    { title: '#', key: 'rownum', width: 60, render: (text, record, index) => (index + 1) },
     { title: 'Feeding ID', dataIndex: 'FeedingID', key: 'FeedingID', width: 100, render: text => (
       <div style={styles.column}>
         {text}
@@ -135,7 +146,7 @@ function DataTable(props) {
       render: (text, record) => (
         <div>
           {record.Number_of_Items.map((item, index) => (
-            <div key={index} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div key={`${record.FeedingID}-recipient-${index}`} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {item.Recipient || '_'}
             </div>
           ))}
@@ -149,7 +160,7 @@ function DataTable(props) {
       render: (text, record) => (
         <div>
           {record.Number_of_Items.map((item, index) => (
-            <div key={index} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div key={`${record.FeedingID}-preysize-${index}`} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {item.Prey_Size || '_'}
             </div>
           ))}
@@ -163,7 +174,7 @@ function DataTable(props) {
       render: (text, record) => (
         <div>
           {record.Number_of_Items.map((item, index) => (
-            <div key={index} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div key={`${record.FeedingID}-preyitem-${index}`} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {item.Prey_Item || '_'}
             </div>
           ))}
@@ -189,26 +200,35 @@ function DataTable(props) {
             activeKey={activeKeys}
             onChange={handleCollapseChange}
             style={{ marginBottom: '20px' }}
-          >
-            <Panel header="Stint Data" key="1">
-              <Table
-                dataSource={[stint]}
-                columns={stintColumns}
-                pagination={false}
-                rowKey="StintID"
-                scroll={{ x: 0 }}
-              />
-            </Panel>
-            <Panel header="Feeding Data" key="2">
-              <Table
-                dataSource={stint.feedingData}
-                columns={feedingColumns}
-                pagination={false}
-                rowKey="FeedingID"
-                scroll={{ x: 0 }}
-              />
-            </Panel>
-          </Collapse>
+            items={[
+              {
+                key: '1',
+                label: 'Stint Data',
+                children: (
+                  <Table
+                    dataSource={[stint]}
+                    columns={stintColumns}
+                    pagination={false}
+                    rowKey="StintID"
+                    scroll={{ x: 600 }}
+                  />
+                )
+              },
+              {
+                key: '2',
+                label: 'Feeding Data',
+                children: (
+                  <Table
+                    dataSource={stint.feedingData}
+                    columns={feedingColumns}
+                    pagination={false}
+                    rowKey="FeedingID"
+                    scroll={{ x: 800 }}
+                  />
+                )
+              }
+            ]}
+          />
 
           {/* Add instruction for scrolling */}
           <div style={{ textAlign: 'center', marginTop: '10px' }}>

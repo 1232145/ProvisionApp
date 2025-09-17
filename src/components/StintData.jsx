@@ -102,11 +102,6 @@ const styles = {
     textAlign: "center",
   },
 
-  fileInput: {
-    width: "100%",
-    padding: "8px",
-  },
-
   inputField: {
     width: "40%",
     height: "25px",
@@ -142,23 +137,28 @@ function StintData() {
     Species: "",
     Prey_Size_Method: "Numeric",
     Prey_Size_Reference: "Culmen length",
-    Name: "",
+    First_Name: "",
+    Last_Name: "",
     Observer_Location: "",
     Date_Time_Start: "",
     Date_Time_End: "",
-    Comment: "",
+    Comment: "", 
     feedingData: [initialFeeding],
   });
 
   const [config, setConfig] = useState(null);
 
-  console.log(stint.Island + "ISLAND");
   const [stintID, setStintID] = useState(
-    `${stint.Island}-${stint.Species}-${stint.Date_Time_Start}-${stint.Name}`
+    `${stint.Island}-${stint.Species}-${stint.Date_Time_Start}-${stint.First_Name} ${stint.Last_Name}`
   );
 
   //display stintl/feeding data
   const [isOpenF, setIsOpenF] = useState(false);
+
+  // Auto-save file status
+  const [saveFileExists, setSaveFileExists] = useState(false);
+  const [lastSaveTime, setLastSaveTime] = useState(null);
+
 
   /**
    * Sets the island data in stintl
@@ -181,7 +181,17 @@ function StintData() {
    * @param {*} val
    */
   const setName = (val) => {
-    setStint({ ...stint, Name: val });
+    // backward compatibility: if a single string is provided, try splitting
+    if (typeof val === 'string') {
+      const parts = val.trim().split(/\s+/);
+      const first = parts[0] || "";
+      const last = parts.slice(1).join(" ") || "";
+      setStint({ ...stint, First_Name: first, Last_Name: last });
+    } else if (val && typeof val === 'object') {
+      setStint({ ...stint, First_Name: val.First_Name || "", Last_Name: val.Last_Name || "" });
+    } else {
+      setStint({ ...stint, First_Name: "", Last_Name: "" });
+    }
   };
 
   /**
@@ -222,20 +232,10 @@ function StintData() {
     setStint({ ...stint, Comment: value });
   };
 
-  const simpleHash = (input) => {
-    // console.log(input.toString(36) + "ID");
-    return input;
-    let hash = 0;
-    for (let i = 0; i < input.length; i++) {
-      const char = input.charCodeAt(i);
-      hash = (hash << 5) - hash + char;
-      hash |= 0; // Convert to 32bit integer
-    }
-    return hash.toString(36); // Convert to base-36 for shorter representation
-  };
 
   const handleSwitchToFeeding = () => {
     setIsOpenF(!isOpenF);
+    // Auto-save when switching between stint and feeding
     ipcRenderer.send("autosave", stint);
   };
 
@@ -244,6 +244,69 @@ function StintData() {
    * @param {*} json
    * @returns
    */
+  const csvNeedsQuoting = (value) => {
+    const s = value == null ? "" : String(value);
+    return /[",\n\r]/.test(s) || /^\s|\s$/.test(s);
+  };
+
+  const csvEscape = (value) => {
+    const s = value == null ? "" : String(value);
+    const escaped = s.replace(/"/g, '""');
+    return csvNeedsQuoting(escaped) ? `"${escaped}"` : escaped;
+  };
+
+  const csvStringifyRows = (rows) => rows.map((row) => row.map(csvEscape).join(",")).join("\n");
+
+  const csvParse = (text) => {
+    const rows = [];
+    let row = [];
+    let field = "";
+    let inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (inQuotes) {
+        if (ch === '"') {
+          const next = text[i + 1];
+          if (next === '"') {
+            field += '"';
+            i++;
+          } else {
+            inQuotes = false;
+          }
+        } else {
+          field += ch;
+        }
+      } else {
+        if (ch === '"') {
+          inQuotes = true;
+        } else if (ch === ',') {
+          row.push(field);
+          field = "";
+        } else if (ch === '\n') {
+          row.push(field);
+          rows.push(row);
+          row = [];
+          field = "";
+        } else if (ch === '\r') {
+          // ignore CR
+        } else {
+          field += ch;
+        }
+      }
+    }
+    // flush last field/row
+    if (inQuotes) {
+      // unclosed quote - treat as literal
+      inQuotes = false;
+    }
+    row.push(field);
+    // only push row if it has any content
+    if (row.length > 1 || (row.length === 1 && row[0] !== "")) {
+      rows.push(row);
+    }
+    return rows;
+  };
+
   const jsonToCSV = (json) => {
     const header = [
       "StintID",
@@ -252,7 +315,8 @@ function StintData() {
       "Species",
       "Prey_Size_Method",
       "Prey_Size_Reference",
-      "Name",
+      "First_Name",
+      "Last_Name",
       "Observer_Location",
       "Date_Time_Start",
       "Date_Time_End",
@@ -269,7 +333,7 @@ function StintData() {
       "Plot_Status",
       "Feeding_Comment",
     ];
-    const csvRows = [header.join(",")];
+    const csvRows = [header];
 
     json.feedingData.forEach((feeding) => {
       feeding.Number_of_Items.forEach((item) => {
@@ -281,7 +345,8 @@ function StintData() {
           json.Species,
           json.Prey_Size_Method,
           json.Prey_Size_Reference,
-          json.Name,
+          json.First_Name,
+          json.Last_Name,
           json.Observer_Location,
           json.Date_Time_Start,
           json.Date_Time_End,
@@ -298,11 +363,11 @@ function StintData() {
           feeding.Plot_Status,
           feeding.Comment,
         ];
-        csvRows.push(row.join(","));
+        csvRows.push(row);
       });
     });
 
-    return csvRows.join("\n");
+    return csvStringifyRows(csvRows);
   };
 
   /**
@@ -311,11 +376,10 @@ function StintData() {
    * @returns {object|null} JSON object or null if format is incorrect
    */
   function csvToJson(csv) {
-    const lines = csv
-      .replace(/\r\n/g, "\n")
-      .split("\n")
-      .filter((line) => line.trim() !== "");
-    if (lines.length < 2) {
+    const rowsRaw = csvParse(csv);
+    // filter out completely empty rows
+    const rows = rowsRaw.filter((r) => r.some((v) => (v ?? '').trim() !== ''));
+    if (rows.length < 2) {
       console.error("Invalid CSV: Not enough data.");
       return stint;
     }
@@ -328,7 +392,9 @@ function StintData() {
       "Species",
       "Prey_Size_Method",
       "Prey_Size_Reference",
-      "Name",
+      // support either split or legacy Name
+      "First_Name",
+      "Last_Name",
       "Observer_Location",
       "Date_Time_Start",
       "Date_Time_End",
@@ -347,88 +413,91 @@ function StintData() {
     ];
 
     // Extract headers from CSV
-    const headers = lines[0].split(",").map((header) => header.trim());
+    const headers = rows[0].map((header) => String(header).trim());
 
     // Validate headers
-    const missingHeaders = requiredHeaders.filter(
-      (header) => !headers.includes(header)
-    );
+    const hasSplitName = headers.includes("First_Name") && headers.includes("Last_Name");
+    const hasLegacyName = headers.includes("Name");
+    const missingHeaders = requiredHeaders.filter((header) => {
+      if (header === "First_Name" || header === "Last_Name") {
+        return !(hasSplitName || hasLegacyName);
+      }
+      return !headers.includes(header);
+    });
     if (missingHeaders.length > 0) {
       message.error(
         `Invalid CSV: Missing headers -> ${missingHeaders.join(", ")}`
       );
       return stint;
     }
+    const headerIndex = headers.reduce((acc, key, idx) => {
+      acc[key] = idx;
+      return acc;
+    }, {});
 
-    const dataLines = lines.slice(1);
-    const feedingData = [];
-    let currentFeedingID = null;
-    let currentFeeding = null;
-    let currentNumberOfItems = [];
+    const dataRows = rows.slice(1);
 
-    for (const line of dataLines) {
-      const values = line.split(",").map((value) => value.trim());
-      const rowData = Object.fromEntries(
-        headers.map((key, index) => [key, values[index] || null])
-      );
-
-      const feedingID = rowData["FeedingID"];
-
-      if (feedingID && feedingID !== currentFeedingID) {
-        if (currentFeedingID !== null) {
-          currentFeeding.Number_of_Items = currentNumberOfItems;
-          feedingData.push(currentFeeding);
-        }
-        currentFeedingID = feedingID;
-        currentFeeding = {
+    // Group feeding rows by FeedingID preserving first-seen order
+    const feedingMap = new Map();
+    const feedingOrder = [];
+    for (const values of dataRows) {
+      const get = (key) => {
+        const i = headerIndex[key];
+        return i == null ? null : (values[i] ?? null);
+      };
+      const feedingID = get("FeedingID");
+      if (!feedingID) continue;
+      if (!feedingMap.has(feedingID)) {
+        feedingMap.set(feedingID, {
           FeedingID: feedingID,
-          Nest: rowData["Nest"],
-          Time_Arrive: rowData["Time_Arrive"],
-          Time_Depart: rowData["Time_Depart"],
-          Provider: rowData["Provider"],
-          Plot_Status: rowData["Plot_Status"],
-          Comment: rowData["Feeding_Comment"],
-        };
-        currentNumberOfItems = [];
+          Nest: get("Nest"),
+          Time_Arrive: get("Time_Arrive"),
+          Time_Depart: get("Time_Depart"),
+          Provider: get("Provider"),
+          Plot_Status: get("Plot_Status"),
+          Comment: get("Feeding_Comment"),
+          Number_of_Items: [],
+        });
+        feedingOrder.push(feedingID);
       }
-
-      if (
-        rowData["Recipient"] ||
-        rowData["Prey_Item"] ||
-        rowData["Prey_Size"]
-      ) {
-        currentNumberOfItems.push({
-          Recipient: rowData["Recipient"],
-          Prey_Item: rowData["Prey_Item"],
-          Prey_Size: rowData["Prey_Size"],
+      const hasItem = (get("Recipient") || get("Prey_Item") || get("Prey_Size"));
+      if (hasItem) {
+        feedingMap.get(feedingID).Number_of_Items.push({
+          Recipient: get("Recipient"),
+          Prey_Item: get("Prey_Item"),
+          Prey_Size: get("Prey_Size"),
         });
       }
     }
 
-    if (currentFeeding) {
-      currentFeeding.Number_of_Items = currentNumberOfItems;
-      feedingData.push(currentFeeding);
-    }
+    const feedingData = feedingOrder.map((id) => feedingMap.get(id));
 
-    const firstRowData = Object.fromEntries(
-      headers.map((key, index) => [
-        key,
-        dataLines[0]?.split(",")[index]?.trim() || null,
-      ])
-    );
+    const firstRow = dataRows[0] || [];
+    const pick = (key) => {
+      const i = headerIndex[key];
+      return i == null ? null : (firstRow[i] ?? null);
+    };
+
+    const firstName = hasSplitName ? pick("First_Name") : (pick("Name") || "").split(/\s+/)[0] || "";
+    const lastName = hasSplitName ? pick("Last_Name") : (() => {
+      const nm = pick("Name") || "";
+      const parts = nm.trim().split(/\s+/);
+      return parts.slice(1).join(" ") || "";
+    })();
 
     const jsonObject = {
-      StintID: firstRowData["StintID"],
-      Stint_Type: firstRowData["Stint_Type"],
-      Island: firstRowData["Island"],
-      Species: firstRowData["Species"],
-      Prey_Size_Method: firstRowData["Prey_Size_Method"],
-      Prey_Size_Reference: firstRowData["Prey_Size_Reference"],
-      Name: firstRowData["Name"],
-      Observer_Location: firstRowData["Observer_Location"],
-      Date_Time_Start: firstRowData["Date_Time_Start"],
-      Date_Time_End: firstRowData["Date_Time_End"],
-      Comment: firstRowData["Stint_Comment"],
+      StintID: pick("StintID"),
+      Stint_Type: pick("Stint_Type"),
+      Island: pick("Island"),
+      Species: pick("Species"),
+      Prey_Size_Method: pick("Prey_Size_Method"),
+      Prey_Size_Reference: pick("Prey_Size_Reference"),
+      First_Name: firstName,
+      Last_Name: lastName,
+      Observer_Location: pick("Observer_Location"),
+      Date_Time_Start: pick("Date_Time_Start"),
+      Date_Time_End: pick("Date_Time_End"),
+      Comment: pick("Stint_Comment"),
       feedingData: feedingData,
     };
 
@@ -441,11 +510,9 @@ function StintData() {
    * @returns {object|null} JSON object or null if format is incorrect
    */
   function configToJson(csv) {
-    const lines = csv
-      .replace(/\r\n/g, "\n")
-      .split("\n")
-      .filter((line) => line.trim() !== "");
-    if (lines.length < 2) {
+    const rowsRaw = csvParse(csv);
+    const rows = rowsRaw.filter((r) => r.some((v) => (v ?? '').trim() !== ''));
+    if (rows.length < 2) {
       console.error("Invalid CSV: Not enough data.");
       return config;
     }
@@ -459,10 +526,8 @@ function StintData() {
       "Recipient",
       "PreySize",
       "PreyItem",
-      "MaxEntries",
-      "ButtonWithSize",
     ];
-    const headers = lines[0].split(",").map((header) => header.trim());
+    const headers = rows[0].map((header) => String(header).trim());
 
     // Check if all required headers exist
     const missingHeaders = requiredHeaders.filter(
@@ -477,17 +542,13 @@ function StintData() {
 
     const json = {};
     headers.forEach((key, index) => {
-      const values = lines
+      const values = rows
         .slice(1)
-        .map((line) => line.split(",")[index]?.trim()) // Trim and handle undefined values
-        .filter((value) => value !== undefined && value !== ""); // Filter out empty values
+        .map((r) => (r[index] == null ? "" : String(r[index]).trim()))
+        .filter((value) => value !== "");
 
-      // Ensure only the first valid value is taken for specific keys
-      if (["MaxEntries", "ButtonWithSize", "size"].includes(key)) {
-        json[key] = values.length > 0 ? values[0] : null;
-      } else {
-        json[key] = values;
-      }
+      // Store all values for each key
+      json[key] = values;
     });
 
     return json;
@@ -602,11 +663,16 @@ function StintData() {
         try {
           if (data) {
             setStint(data);
+            notification.success({
+              message: "Data Loaded",
+              description: "Auto-save data loaded successfully.",
+              placement: "topRight",
+              duration: 2,
+            });
           } else {
             notification.info({
               message: "No Auto-Save Data",
-              description:
-                "It looks like there is no auto-save data available at the moment.",
+              description: "No auto-save data found.",
               placement: "topRight",
               duration: 1.5,
             });
@@ -625,12 +691,43 @@ function StintData() {
   //detect change in stint to create stintID
   useEffect(() => {
     setStintID(
-      `${stint.Island}-${stint.Species}-${stint.Date_Time_Start}-${stint.Name}`.replace(
-        " ",
-        "-"
-      )
+      `${stint.Island}-${stint.Species}-${stint.Date_Time_Start}-${stint.First_Name} ${stint.Last_Name}`
+        .replace(/\s+/g, "-")
     );
   }, [stint]);
+
+  // Auto-save whenever stint data changes
+  useEffect(() => {
+    // Only auto-save if there's meaningful data (avoid saving empty initial state)
+    if (stint.Island || stint.Species || stint.First_Name || stint.Last_Name || stint.Date_Time_Start) {
+      ipcRenderer.send("autosave", stint);
+    }
+  }, [stint]);
+
+  // Listen for save file status updates
+  useEffect(() => {
+    const handleSaveFileStatus = (event, { exists, lastModified }) => {
+      // Only update state if values actually changed to prevent unnecessary re-renders
+      setSaveFileExists(prevExists => prevExists !== exists ? exists : prevExists);
+      setLastSaveTime(prevTime => prevTime !== lastModified ? lastModified : prevTime);
+    };
+
+    ipcRenderer.on("save-file-status", handleSaveFileStatus);
+
+    return () => {
+      ipcRenderer.removeListener("save-file-status", handleSaveFileStatus);
+    };
+  }, []);
+
+  // Component initialization - check if save file exists
+  useEffect(() => {
+    checkSaveFileExists();
+  }, []);
+
+  // Function to check if auto-save file exists
+  const checkSaveFileExists = () => {
+    ipcRenderer.send("check-save-file-exists");
+  };
 
   useEffect(() => {
     ipcRenderer.on("warn-close", () => {
@@ -662,7 +759,6 @@ function StintData() {
                   <div style={styles.labelContainer}>
                     <span style={styles.label}>StintID:</span>
                     {stintID}
-                    {/* {simpleHash(stintID)} */}
                   </div>
                   <div style={styles.labelContainer}>
                     <span style={styles.label}>Stint type:</span>{" "}
@@ -697,7 +793,7 @@ function StintData() {
               <Col xs={24} md={12} style={styles.rightColumn}>
                 <Name
                   setName={setName}
-                  data={stint.Name}
+                  data={{ First_Name: stint.First_Name, Last_Name: stint.Last_Name }}
                   styles={styles}
                   config={config}
                 />
@@ -714,6 +810,7 @@ function StintData() {
                   description="Start Stint Time"
                   styles={styles}
                   hasInput={false}
+                  hasButton={false}
                 />
                 <Timer
                   setTime={setTimeDepart}
@@ -722,6 +819,7 @@ function StintData() {
                   description="End Stint Time"
                   styles={styles}
                   hasInput={false}
+                  hasButton={false}
                 />
               </Col>
             </Row>
@@ -772,12 +870,28 @@ function StintData() {
 
             <div style={{ maxWidth: "100%", overflowX: "auto" }}>
               <DataTable stint={stint} />
-              <Button
-                style={{ width: "100%" }}
-                onClick={() => handleLoadLastSave()}
-              >
-                Load Save
-              </Button>
+              
+              {/* Conditional Load Save Button */}
+              {saveFileExists && (
+                <div style={{ marginTop: "10px" }}>
+                  <Button
+                    style={{ width: "100%", marginBottom: "8px" }}
+                    onClick={() => handleLoadLastSave()}
+                  >
+                    Load Save
+                  </Button>
+                  {lastSaveTime && (
+                    <div style={{ 
+                      textAlign: "center", 
+                      fontSize: "12px", 
+                      color: "#666",
+                      fontStyle: "italic"
+                    }}>
+                      Last saved: {new Date(lastSaveTime).toLocaleString()}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </>
