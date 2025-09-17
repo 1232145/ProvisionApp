@@ -32,24 +32,30 @@ function Name({ setName, data, styles, config }) {
     }
   }, [data, config]);
 
+  // Check if config has Name data
+  const hasConfigData = config && config.Name && config.Name.length > 0;
+
   return (
     <div style={styles.inputContainer}>
       <p style={styles.labelContainer}>
         <span style={styles.label}>Name:</span>
       </p>
-      <Select
-        placeholder="Select a name..."
-        style={{ width: '100%', marginBottom: '10px' }}
-        onChange={handleSelectChange}
-        allowClear
-        value={config && config.Name && config.Name.includes(combined) ? combined : undefined}
-      >
-        {config && config.Name && config.Name.map((name, index) => (
-          <Option key={index} value={name}>
-            {name}
-          </Option>
-        ))}
-      </Select>
+      {/* Only show dropdown if config data is available */}
+      {hasConfigData && (
+        <Select
+          placeholder="Select a name..."
+          style={{ width: '100%', marginBottom: '10px' }}
+          onChange={handleSelectChange}
+          allowClear
+          value={config.Name.includes(combined) ? combined : undefined}
+        >
+          {config.Name.map((name, index) => (
+            <Option key={index} value={name}>
+              {name}
+            </Option>
+          ))}
+        </Select>
+      )}
       <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
         <Input
           onChange={handleFirstChange}

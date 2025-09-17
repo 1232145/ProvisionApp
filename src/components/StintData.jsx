@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import Island from "./stintl/Island";
 import Species from "./stintl/Species";
 import Name from "./stintl/Name";
@@ -10,6 +10,7 @@ import { saveAs } from "file-saver";
 import FeedingData from "./FeedingData";
 import { Button, Row, Col, Upload, Modal, notification, message } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
+import { useAutoSave } from "../hooks/useAutoSave";
 const { ipcRenderer } = window.require("electron");
 
 const styles = {
@@ -147,6 +148,15 @@ function StintData() {
   });
 
   const [config, setConfig] = useState(null);
+
+  // Memoize config processing to prevent expensive re-parsing
+  const processedConfig = useMemo(() => {
+    if (!config) return null;
+    
+    // Config is already processed by configToJson, but we can add additional optimizations here
+    console.log('Config processed/memoized at:', new Date().toISOString());
+    return config;
+  }, [config]);
 
   const [stintID, setStintID] = useState(
     `${stint.Island}-${stint.Species}-${stint.Date_Time_Start}-${stint.First_Name} ${stint.Last_Name}`
@@ -696,13 +706,13 @@ function StintData() {
     );
   }, [stint]);
 
-  // Auto-save whenever stint data changes
+  // Initialize debounced auto-save hook (1 second delay)
+  const debouncedAutoSave = useAutoSave(1000);
+
+  // Auto-save whenever stint data changes (debounced)
   useEffect(() => {
-    // Only auto-save if there's meaningful data (avoid saving empty initial state)
-    if (stint.Island || stint.Species || stint.First_Name || stint.Last_Name || stint.Date_Time_Start) {
-      ipcRenderer.send("autosave", stint);
-    }
-  }, [stint]);
+    debouncedAutoSave(stint);
+  }, [stint, debouncedAutoSave]);
 
   // Listen for save file status updates
   useEffect(() => {
@@ -777,7 +787,7 @@ function StintData() {
                   setIsland={setIsland}
                   data={stint.Island}
                   styles={styles}
-                  config={config}
+                  config={processedConfig}
                 />
                 <Species
                   setSpecies={setSpecies}
@@ -795,13 +805,13 @@ function StintData() {
                   setName={setName}
                   data={{ First_Name: stint.First_Name, Last_Name: stint.Last_Name }}
                   styles={styles}
-                  config={config}
+                  config={processedConfig}
                 />
                 <ObserverLocation
                   setObs={setObserverLocation}
                   data={stint.Observer_Location}
                   styles={styles}
-                  config={config}
+                  config={processedConfig}
                 />
                 <Timer
                   setTime={setTimeArrive}
