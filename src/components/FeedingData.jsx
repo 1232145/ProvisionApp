@@ -10,8 +10,6 @@ import Comment from './Comment';
 import { useState, useEffect } from 'react';
 import React from 'react';
 import { Button, Input, Checkbox, message, Modal, Collapse } from 'antd';  // Import Ant Design components
-
-const { Panel } = Collapse;
 const { ipcRenderer } = window.require('electron');
 
 function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onToggle, styles, config }) {
@@ -129,6 +127,9 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
      * this stores and handles input feeding data
      */
     const [feeding, setFeeding] = useState(initialFeeding);
+
+    // Max entries for feeding data dropdowns (default: 10)
+    const [maxEntries, setMaxEntries] = useState(10);
 
     //for current feeding data index
     const [index, setIndex] = useState(0);
@@ -256,11 +257,16 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
      * this adds a new empty feeding data
      */
     const handleNewFeeding = () => {
-        setFeeding({ ...initialFeeding, FeedingID: feedings.length + 1 });
-        setFeedings([...feedings, initialFeeding]);
+        const nextId = (feedings?.length || 0) + 1;
+        const newFeeding = { ...initialFeeding, FeedingID: nextId };
+        setFeeding(newFeeding);
+        setFeedings([...
+            feedings,
+            newFeeding
+        ]);
         setIndex(feedings.length);
         //stamp the temporary feeding
-        setFeedingTemp(feeding);
+        setFeedingTemp(newFeeding);
         setNIndex(0);
     }
 
@@ -268,15 +274,22 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
         return (
             <div>
                 {message}
-                <Collapse style={{ width: '100%', overflowY: 'auto' }}>
-                    <Panel header="View Details" key="1">
-                        <ul>
-                            {data.map((item, index) => (
-                                <li key={index}>{item}</li>
-                            ))}
-                        </ul>
-                    </Panel>
-                </Collapse>
+                <Collapse 
+                    style={{ width: '100%', overflowY: 'auto' }}
+                    items={[
+                        {
+                            key: '1',
+                            label: 'View Details',
+                            children: (
+                                <ul>
+                                    {data.map((item, index) => (
+                                        <li key={index}>{item}</li>
+                                    ))}
+                                </ul>
+                            )
+                        }
+                    ]}
+                />
             </div>
         )
     }
@@ -408,9 +421,8 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
         }
     }, [feedings.length])
 
-    //feature: auto save
+    // Auto-save whenever feeding data changes
     useEffect(() => {
-        //if there is a change, save that change
         if (feedingTemp !== feeding) {
             handleSaveFeeding(index);
             ipcRenderer.send('autosave', stint);
@@ -431,6 +443,36 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
                         textAlign: 'center',
                         flexGrow: '1'
                     }}>Feeding {index + 1}</h1>
+                    <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '8px',
+                        fontSize: '14px',
+                        whiteSpace: 'nowrap'
+                    }}>
+                        <span>Max:</span>
+                        <Input
+                            type="number"
+                            min="1"
+                            max="20"
+                            value={maxEntries}
+                            onChange={(e) => {
+                                const value = parseInt(e.target.value);
+                                if (isNaN(value) || value < 1) {
+                                    setMaxEntries(1);
+                                } else if (value > 20) {
+                                    setMaxEntries(20);
+                                } else {
+                                    setMaxEntries(value);
+                                }
+                            }}
+                            style={{ 
+                                width: "60px", 
+                                textAlign: "center"
+                            }}
+                            size="small"
+                        />
+                    </div>
                 </div>
 
                 <div style={styles.headContainer}>
@@ -493,11 +535,11 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
                 </div>
 
                 <div style={styles.stintlContainer}>
-                    <Nest setNest={setNest} data={feeding.Nest} styles={styles} config={config} />
-                    <Provider setProvider={setProvider} data={feeding.Provider} styles={styles} config={config} />
-                    <Recipient setRecipient={setRecipient} data={feeding.Number_of_Items[nIndex].Recipient} styles={styles} config={config} />
-                    <PreySize setPreySize={setPreySize} data={feeding.Number_of_Items[nIndex].Prey_Size} styles={styles} config={config} />
-                    <PreyItem setPreyItem={setPreyItem} data={feeding.Number_of_Items[nIndex].Prey_Item} styles={styles} config={config} />
+                    <Nest setNest={setNest} data={feeding.Nest} styles={styles} config={config} maxEntries={maxEntries} />
+                    <Provider setProvider={setProvider} data={feeding.Provider} styles={styles} config={config} maxEntries={maxEntries} />
+                    <Recipient setRecipient={setRecipient} data={feeding.Number_of_Items[nIndex].Recipient} styles={styles} config={config} maxEntries={maxEntries} />
+                    <PreySize setPreySize={setPreySize} data={feeding.Number_of_Items[nIndex].Prey_Size} styles={styles} config={config} maxEntries={maxEntries} />
+                    <PreyItem setPreyItem={setPreyItem} data={feeding.Number_of_Items[nIndex].Prey_Item} styles={styles} config={config} maxEntries={maxEntries} />
                 </div>
 
                 <div>
