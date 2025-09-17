@@ -7,7 +7,7 @@ import Provider from './feeding/Provider';
 import Recipient from './feeding/Recipient';
 import Timer from './Timer';
 import Comment from './Comment';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useReducer } from 'react';
 import React from 'react';
 import { Button, Input, Checkbox, message, Modal, Collapse } from 'antd';  // Import Ant Design components
 import { useAutoSave } from '../hooks/useAutoSave';
@@ -22,6 +22,45 @@ const defaultPreyItems = ["H", "U", "R", "S", "UF", "A", "HD", "T", "H or R", "E
   "SM", "SN", "SP", "SS", "SY", "T", "TC", "U", "UF1", "UF1-SI2016", "UFEER2016", 
   "UF-PI2017", "UFSI2015", "UG", "LA/UF", "UI", "V", "W", "X", "Y", "Z"];
 const defaultNests = ["P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9", "P10"];
+
+// Feeding state reducer for better state management
+const feedingReducer = (state, action) => {
+    switch (action.type) {
+        case 'SET_PLOT':
+            return { ...state, feeding: { ...state.feeding, Plot_Status: action.payload } };
+        case 'SET_NEST':
+            return { ...state, feeding: { ...state.feeding, Nest: action.payload } };
+        case 'SET_PROVIDER':
+            return { ...state, feeding: { ...state.feeding, Provider: action.payload } };
+        case 'SET_NUMBER_ITEMS':
+            return { ...state, feeding: { ...state.feeding, Number_of_Items: action.payload } };
+        case 'SET_RECIPIENT':
+            return { ...state, feeding: { ...state.feeding, Number_of_Items: action.payload } };
+        case 'SET_PREY_SIZE':
+            return { ...state, feeding: { ...state.feeding, Number_of_Items: action.payload } };
+        case 'SET_PREY_ITEM':
+            return { ...state, feeding: { ...state.feeding, Number_of_Items: action.payload } };
+        case 'SET_TIME_ARRIVE':
+            return { ...state, feeding: { ...state.feeding, Time_Arrive: action.payload, Time_Depart: "" } };
+        case 'SET_TIME_DEPART':
+            return { ...state, feeding: { ...state.feeding, Time_Depart: action.payload } };
+        case 'SET_COMMENT':
+            return { ...state, feeding: { ...state.feeding, Comment: action.payload } };
+        case 'SET_FEEDING':
+            return { ...state, feeding: action.payload, feedingTemp: state.feeding };
+        case 'SET_INDEX':
+            return { ...state, index: action.payload };
+        case 'SET_NINDEX':
+            return { ...state, nIndex: action.payload };
+        case 'SET_FEEDING_TEMP':
+            return { ...state, feedingTemp: action.payload };
+        case 'BATCH_UPDATE':
+            // For multiple updates in one action
+            return { ...state, ...action.payload };
+        default:
+            return state;
+    }
+};
 
 function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onToggle, styles, config }) {
     // Initialize debounced auto-save hook (1 second delay)
@@ -136,11 +175,6 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
         }
     }
 
-    /**
-     * this stores and handles input feeding data
-     */
-    const [feeding, setFeeding] = useState(initialFeeding);
-
     // Max entries for feeding data dropdowns (default: 10)
     const [maxEntries, setMaxEntries] = useState(10);
 
@@ -161,10 +195,18 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
         };
     }, [config, maxEntries]);
 
-    //for current feeding data index
-    const [index, setIndex] = useState(0);
+    // Initialize feeding state with useReducer for better state management
+    const [feedingState, dispatchFeeding] = useReducer(feedingReducer, {
+        feeding: initialFeeding,
+        feedingTemp: initialFeeding,
+        index: 0,
+        nIndex: 0
+    });
 
-    //for closing index
+    // Destructure for easier access
+    const { feeding, feedingTemp, index, nIndex } = feedingState;
+
+    //for closing index (keeping as separate state since it's independent)
     const [closedIndex, setClosedIndex] = useState([]);
     const [displayClosed, setDisplayClosed] = useState(true);
     const [isClosedFeedingShown, setIsClosedFeedingShown] = useState(false);
@@ -174,19 +216,12 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
         displayClosedFeeding(!isClosedFeedingShown);
     };
 
-
-    //a temporary feeding for later checking with feeding to compare differences
-    const [feedingTemp, setFeedingTemp] = useState(feeding);
-
-    //index of the number of items (for setting data at index)
-    const [nIndex, setNIndex] = useState(0);
-
     /**
      * this handles button input for plot data
      * @param {*} Plot
      */
     const setPlot = (Plot) => {
-        setFeeding({ ...feeding, Plot_Status: Plot });
+        dispatchFeeding({ type: 'SET_PLOT', payload: Plot });
     }
 
     /**
@@ -194,7 +229,7 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
      * @param {*} Nest
      */
     const setNest = (Nest) => {
-        setFeeding({ ...feeding, Nest: Nest });
+        dispatchFeeding({ type: 'SET_NEST', payload: Nest });
     }
 
     /**
@@ -202,7 +237,7 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
      * @param {*} Provider 
      */
     const setProvider = (Provider) => {
-        setFeeding({ ...feeding, Provider: Provider });
+        dispatchFeeding({ type: 'SET_PROVIDER', payload: Provider });
     }
 
     /**
@@ -210,7 +245,7 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
      * @param {*} n 
      */
     const setNumberItems = (item) => {
-        setFeeding({ ...feeding, Number_of_Items: item });
+        dispatchFeeding({ type: 'SET_NUMBER_ITEMS', payload: item });
     }
 
     /**
@@ -254,21 +289,26 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
      */
     const setTimeArrive = (time) => {
         // Extract only the 'HH:mm' part from the datetime string
-        setFeeding({ ...feeding, Time_Arrive: time, Time_Depart: "" });
+        dispatchFeeding({ type: 'SET_TIME_ARRIVE', payload: time });
     }
 
     /**
      * this sets the time depart data
      */
     const setTimeDepart = (time) => {
-        setFeeding({ ...feeding, Time_Depart: time });
+        dispatchFeeding({ type: 'SET_TIME_DEPART', payload: time });
     }
 
     /**
      * 
      */
     const setComment = (value) => {
-        setFeeding({ ...feeding, Comment: value });
+        dispatchFeeding({ type: 'SET_COMMENT', payload: value });
+    }
+
+    // Helper function for NumberItems component
+    const setNIndex = (value) => {
+        dispatchFeeding({ type: 'SET_NINDEX', payload: value });
     }
 
     /**
@@ -280,7 +320,7 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
         newFeedings[index] = feeding;
         setFeedings(newFeedings);
         //stamp the temporary feeding
-        setFeedingTemp(feeding);
+        dispatchFeeding({ type: 'SET_FEEDING_TEMP', payload: feeding });
     }
 
     /**
@@ -289,15 +329,22 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
     const handleNewFeeding = () => {
         const nextId = (feedings?.length || 0) + 1;
         const newFeeding = { ...initialFeeding, FeedingID: nextId };
-        setFeeding(newFeeding);
+        
+        // Update multiple state values in one dispatch
+        dispatchFeeding({ 
+            type: 'BATCH_UPDATE', 
+            payload: {
+                feeding: newFeeding,
+                feedingTemp: newFeeding,
+                index: feedings.length,
+                nIndex: 0
+            }
+        });
+        
         setFeedings([...
             feedings,
             newFeeding
         ]);
-        setIndex(feedings.length);
-        //stamp the temporary feeding
-        setFeedingTemp(newFeeding);
-        setNIndex(0);
     }
 
     const displayItemsMessage = (data, message) => {
@@ -380,14 +427,20 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
      * this handles the switching of indexent feeding data to existing feeding data and updating that indexent feeding data if any changes
      * @param {*} e the feeding data ID to switch to
      */
-    const handleOpenFeeding = (index) => {
+    const handleOpenFeeding = (openIndex) => {
         //Move to another feeding data
-        setIndex(index);
-        const openF = feedings[index];
-        setFeeding(openF);
-        //stamp the temporary feeding
-        setFeedingTemp(feeding);
-        setNIndex(0);
+        const openF = feedings[openIndex];
+        
+        // Update multiple state values in one dispatch
+        dispatchFeeding({ 
+            type: 'BATCH_UPDATE', 
+            payload: {
+                index: openIndex,
+                feeding: openF,
+                feedingTemp: feeding, // stamp the current feeding as temp
+                nIndex: 0
+            }
+        });
     }
 
     const handleCloseFeeding = (index) => {
