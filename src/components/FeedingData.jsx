@@ -314,24 +314,6 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
         dispatchFeeding({ type: 'SET_NINDEX', payload: value });
     }
 
-    // Memoized feeding actions for context (prevents unnecessary re-renders)
-    const feedingActions = useMemo(() => ({
-        setPlot,
-        setNest,
-        setProvider,
-        setNumberItems,
-        setRecipient,
-        setPreySize,
-        setPreyItem,
-        setTimeArrive,
-        setTimeDepart,
-        setComment,
-        setNIndex,
-        handleSaveFeeding,
-        handleNewFeeding,
-        handleOpenFeeding
-    }), []);
-
     /**
      * saves feeding tab at index
      * @param {} index 
@@ -532,6 +514,24 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
             debouncedAutoSave(stint);
         }
     }, [feeding, feedingTemp, handleSaveFeeding, index, stint, debouncedAutoSave])
+
+    // Memoized feeding actions for context (prevents unnecessary re-renders)
+    const feedingActions = useMemo(() => ({
+        setPlot,
+        setNest,
+        setProvider,
+        setNumberItems,
+        setRecipient,
+        setPreySize,
+        setPreyItem,
+        setTimeArrive,
+        setTimeDepart,
+        setComment,
+        setNIndex,
+        handleSaveFeeding,
+        handleNewFeeding,
+        handleOpenFeeding
+    }), [handleSaveFeeding, handleNewFeeding, handleOpenFeeding, setRecipient, setPreySize, setPreyItem]);
 
     return (
         <>
