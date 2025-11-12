@@ -3,11 +3,28 @@ import { Select } from 'antd';
 
 const { Option } = Select;
 
+/**
+ * Island component for selecting or entering island name
+ * Shows dropdown if config data is available, otherwise shows text input
+ * @param {object} props - Component props
+ * @param {Function} props.setIsland - Callback function to update island value
+ * @param {string} props.data - Current island value
+ * @param {object} props.styles - Style object for component styling
+ * @param {object|null} props.config - Config object containing Island array, or null if no config loaded
+ */
 function Island({ setIsland, data, styles, config }) {
+  /**
+   * Handles selection change from dropdown
+   * @param {string} value - Selected island value
+   */
   const handleSelectChange = (value) => {
     setIsland(value);
   };
 
+  /**
+   * Handles input change from text field
+   * @param {Event} e - Input change event
+   */
   const handleInputChange = (e) => {
     setIsland(e.currentTarget.value);
   };
@@ -27,13 +44,17 @@ function Island({ setIsland, data, styles, config }) {
       <p style={styles.labelContainer}>
         <span style={styles.label}>Island:</span>
       </p>
-      {/* Only show dropdown if config data is available */}
-      {hasConfigData && (
+      {hasConfigData ? (
         <Select
           placeholder="Select an island"
-          style={{ width: '50%', marginBottom: '10px' }}
+          style={{ width: '100%' }}
           onChange={handleSelectChange}
           allowClear
+          showSearch
+          optionFilterProp="children"
+          filterOption={(input, option) =>
+            option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+          }
           value={config.Island.includes(data) ? data : undefined} // Set value based on input
         >
           {config.Island.map((island, index) => (
@@ -42,16 +63,17 @@ function Island({ setIsland, data, styles, config }) {
             </Option>
           ))}
         </Select>
+      ) : (
+        <input
+          onChange={handleInputChange}
+          value={data}
+          placeholder="Island"
+          style={{
+            ...styles.inputField,
+            width: '100%'
+          }}
+        />
       )}
-      <input
-        onChange={handleInputChange}
-        value={data}
-        placeholder="Island"
-        style={{
-          ...styles.inputField,
-          width: hasConfigData ? undefined : '100%' // Full width when no dropdown
-        }}
-      />
     </div>
   );
 }

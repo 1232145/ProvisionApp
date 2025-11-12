@@ -7,7 +7,7 @@ import Provider from './feeding/Provider';
 import Recipient from './feeding/Recipient';
 import Timer from './Timer';
 import Comment from './Comment';
-import { useState, useEffect, useMemo, useReducer } from 'react';
+import { useState, useEffect, useMemo, useReducer, useCallback } from 'react';
 import React from 'react';
 import { Button, Input, Checkbox, message, Modal, Collapse } from 'antd';  // Import Ant Design components
 import { useAutoSave } from '../hooks/useAutoSave';
@@ -26,7 +26,15 @@ const defaultPreyItems = ["H", "U", "R", "S", "UF", "A", "HD", "T", "H or R", "E
   "UF-PI2017", "UFSI2015", "UG", "LA/UF", "UI", "V", "W", "X", "Y", "Z"];
 const defaultNests = ["P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9", "P10"];
 
-// Feeding state reducer for better state management
+/**
+ * Feeding state reducer for managing feeding data state
+ * Handles all state updates for feeding data using reducer pattern
+ * @param {object} state - Current feeding state object containing feeding, feedingTemp, index, nIndex
+ * @param {object} action - Action object with type and payload
+ * @param {string} action.type - Action type (e.g., 'SET_PLOT', 'SET_NEST', 'SET_NUMBER_ITEMS')
+ * @param {*} action.payload - Action payload data
+ * @returns {object} New state object
+ */
 const feedingReducer = (state, action) => {
     switch (action.type) {
         case 'SET_PLOT':
@@ -65,6 +73,21 @@ const feedingReducer = (state, action) => {
     }
 };
 
+/**
+ * FeedingData component - Main component for managing feeding data entries
+ * Handles multiple feeding entries, each containing nest, provider, recipient, prey items, and timing information
+ * Provides UI for entering feeding details, managing multiple feedings, and closing feedings
+ * @param {object} props - Component props
+ * @param {object} props.initialFeeding - Template object for creating new feeding entries
+ * @param {object} props.stint - The parent stint data object
+ * @param {Array} props.feedings - Array of feeding data objects
+ * @param {Function} props.setFeedings - Callback to update the feedings array
+ * @param {boolean} props.isOpen - Whether the feeding data view is currently open
+ * @param {Function} props.onToggle - Callback to toggle between stint and feeding views
+ * @param {object} props.styles - Style object for component styling
+ * @param {object|null} props.config - Config object containing dropdown options, or null if no config loaded
+ * @returns {JSX.Element} The feeding data entry interface
+ */
 function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onToggle, styles, config }) {
     // Initialize debounced auto-save hook (1 second delay)
     const debouncedAutoSave = useAutoSave(1000);
@@ -164,7 +187,7 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
             borderRadius: '8px',
             padding: '15px',
             height: 'auto',
-            width: config !== null || config !== undefined ? `${config?.ButtonWithSize[0]}px` : 'auto', //adjustable
+            width: 'auto', //adjustable
             minWidth: '150px',
             backgroundColor: '#f9f9f9',
             boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
@@ -179,7 +202,7 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
     }
 
     // Max entries for feeding data dropdowns (default: 10)
-    const [maxEntries, setMaxEntries] = useState(10);
+    const [maxEntries, setMaxEntries] = useState(5);
 
     // Memoized sliced config - computed once, eliminates 5x re-renders in child components
     const slicedConfig = useMemo(() => {
@@ -220,41 +243,42 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
     };
 
     /**
-     * this handles button input for plot data
-     * @param {*} Plot
+     * Sets the plot status for the current feeding (e.g., "Inside Plot", "Outside Plot")
+     * @param {string} Plot - The plot status value
      */
     const setPlot = (Plot) => {
         dispatchFeeding({ type: 'SET_PLOT', payload: Plot });
     }
 
     /**
-     * this handles button input for nest data
-     * @param {*} Nest
+     * Sets the nest identifier for the current feeding
+     * @param {string} Nest - The nest identifier (e.g., "P1", "P2")
      */
     const setNest = (Nest) => {
         dispatchFeeding({ type: 'SET_NEST', payload: Nest });
     }
 
     /**
-     * this handles button input for provider data
-     * @param {*} Provider 
+     * Sets the provider identifier for the current feeding
+     * @param {string} Provider - The provider code (e.g., "BA", "BL", "FR")
      */
     const setProvider = (Provider) => {
         dispatchFeeding({ type: 'SET_PROVIDER', payload: Provider });
     }
 
     /**
-     * this handles input for number of items
-     * @param {*} n 
+     * Sets the entire Number_of_Items array for the current feeding
+     * @param {Array} item - Array of item objects, each containing Recipient, Prey_Item, and Prey_Size
      */
     const setNumberItems = (item) => {
         dispatchFeeding({ type: 'SET_NUMBER_ITEMS', payload: item });
     }
 
     /**
-    * this handles button input for recipent data
-    * @param {*} Recipent 
-    */
+     * Sets the recipient for the currently selected item in Number_of_Items
+     * Updates the recipient value at the current nIndex position
+     * @param {string} Recipient - The recipient identifier (e.g., "A", "B", "C")
+     */
     const setRecipient = (Recipient) => {
         let items = [...{ ...feeding }.Number_of_Items];
         let item = items[nIndex];
@@ -264,8 +288,9 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
     }
 
     /**
-     * this handles button input for prey item data
-     * @param {*} Prey_Item 
+     * Sets the prey item identifier for the currently selected item in Number_of_Items
+     * Updates the prey item value at the current nIndex position
+     * @param {string} Prey_Item - The prey item code (e.g., "H", "U", "R", "S")
      */
     const setPreyItem = (Prey_Item) => {
         let items = [...{ ...feeding }.Number_of_Items];
@@ -276,8 +301,9 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
     }
 
     /**
-     * this handles button input for prey size data
-     * @param {*} Prey_Size 
+     * Sets the prey size value for the currently selected item in Number_of_Items
+     * Updates the prey size value at the current nIndex position
+     * @param {string} Prey_Size - The prey size value (e.g., "0.25", "0.5", "1.0")
      */
     const setPreySize = (Prey_Size) => {
         let items = [...{ ...feeding }.Number_of_Items];
@@ -288,7 +314,9 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
     }
 
     /**
-     * this sets the time arrive data and time depart data to empty
+     * Sets the arrival time for the current feeding
+     * Also clears the departure time when arrival time is set
+     * @param {string} time - The arrival time string
      */
     const setTimeArrive = (time) => {
         // Extract only the 'HH:mm' part from the datetime string
@@ -296,40 +324,49 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
     }
 
     /**
-     * this sets the time depart data
+     * Sets the departure time for the current feeding
+     * @param {string} time - The departure time string
      */
     const setTimeDepart = (time) => {
         dispatchFeeding({ type: 'SET_TIME_DEPART', payload: time });
     }
 
     /**
-     * 
+     * Sets the comment text for the current feeding
+     * @param {string} value - The comment text to set
      */
     const setComment = (value) => {
         dispatchFeeding({ type: 'SET_COMMENT', payload: value });
     }
 
-    // Helper function for NumberItems component
+    /**
+     * Sets the current index for Number_of_Items array (which item is currently being edited)
+     * Helper function for NumberItems component to track which item in the array is selected
+     * @param {number} value - The index of the selected item (0-based)
+     */
     const setNIndex = (value) => {
         dispatchFeeding({ type: 'SET_NINDEX', payload: value });
     }
 
     /**
-     * saves feeding tab at index
-     * @param {} index 
+     * Saves the current feeding data to the feedings array at the specified index
+     * Also updates the feedingTemp state to mark the current feeding as saved
+     * @param {number} index - The index in the feedings array where to save the current feeding
      */
-    function handleSaveFeeding(index) {
+    const handleSaveFeeding = useCallback((index) => {
         let newFeedings = [...feedings];
         newFeedings[index] = feeding;
         setFeedings(newFeedings);
         //stamp the temporary feeding
         dispatchFeeding({ type: 'SET_FEEDING_TEMP', payload: feeding });
-    }
+    }, [feedings, feeding, setFeedings]);
 
     /**
-     * this adds a new empty feeding data
+     * Creates a new empty feeding entry and adds it to the feedings array
+     * Automatically assigns the next FeedingID and switches to the new feeding
+     * @returns {void}
      */
-    const handleNewFeeding = () => {
+    const handleNewFeeding = useCallback(() => {
         const nextId = (feedings?.length || 0) + 1;
         const newFeeding = { ...initialFeeding, FeedingID: nextId };
         
@@ -348,8 +385,15 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
             feedings,
             newFeeding
         ]);
-    }
+    }, [feedings, initialFeeding, setFeedings]);
 
+    /**
+     * Creates a collapsible message display component for showing lists of items
+     * Used in modals to display arrays of data (e.g., filled fields, empty fields)
+     * @param {Array} data - Array of items to display in the list
+     * @param {string} message - The message text to display above the list
+     * @returns {JSX.Element} React component with collapsible list
+     */
     const displayItemsMessage = (data, message) => {
         return (
             <div>
@@ -375,7 +419,10 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
     }
 
     /**
-     * this deletes feeding data at current index
+     * Deletes the feeding data at the current index
+     * Shows a confirmation modal if the feeding has filled data
+     * Automatically switches to the previous feeding (or first feeding if deleting index 0)
+     * Prevents deletion if it's the only remaining feeding
      */
     const handleDeleteFeeding = () => {
         if (feedings.length > 1) {
@@ -427,10 +474,12 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
     };
 
     /**
-     * this handles the switching of indexent feeding data to existing feeding data and updating that indexent feeding data if any changes
-     * @param {*} e the feeding data ID to switch to
+     * Switches to a different feeding in the feedings array
+     * Saves the current feeding state before switching
+     * Updates the feeding state, index, and nIndex to the selected feeding
+     * @param {number} openIndex - The index of the feeding to switch to (0-based)
      */
-    const handleOpenFeeding = (openIndex) => {
+    const handleOpenFeeding = useCallback((openIndex) => {
         //Move to another feeding data
         const openF = feedings[openIndex];
         
@@ -444,8 +493,14 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
                 nIndex: 0
             }
         });
-    }
+    }, [feedings, feeding]);
 
+    /**
+     * Closes a feeding by marking it as closed (adds to closedIndex array)
+     * Validates that all required fields are filled before closing
+     * Shows error message if any required fields are missing
+     * @param {number} index - The index of the feeding to close
+     */
     const handleCloseFeeding = (index) => {
         const emptyFields = [];
 
@@ -495,6 +550,10 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
         displayClosedFeeding(false);
     };
 
+    /**
+     * Controls the visibility of closed feedings in the feeding list
+     * @param {boolean} bool - True to show closed feedings, false to hide them
+     */
     const displayClosedFeeding = (bool) => {
         setDisplayClosed(bool);
     }
@@ -505,7 +564,7 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
         if (feedings.length > 0 && index === 0) {
             handleOpenFeeding(feedings.length - 1);
         }
-    }, [feedings.length])
+    }, [feedings.length, index, handleOpenFeeding])
 
     // Auto-save whenever feeding data changes (debounced)
     useEffect(() => {
@@ -555,27 +614,21 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
                         whiteSpace: 'nowrap'
                     }}>
                         <span>Max:</span>
-                        <Input
-                            type="number"
-                            min="1"
-                            max="20"
+                        <select
                             value={maxEntries}
-                            onChange={(e) => {
-                                const value = parseInt(e.target.value);
-                                if (isNaN(value) || value < 1) {
-                                    setMaxEntries(1);
-                                } else if (value > 20) {
-                                    setMaxEntries(20);
-                                } else {
-                                    setMaxEntries(value);
-                                }
-                            }}
+                            onChange={(e) => setMaxEntries(parseInt(e.target.value))}
                             style={{ 
                                 width: "60px", 
-                                textAlign: "center"
+                                textAlign: "center",
+                                padding: "2px",
+                                borderRadius: "4px",
+                                border: "1px solid #d9d9d9"
                             }}
-                            size="small"
-                        />
+                        >
+                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
+                                <option key={num} value={num}>{num}</option>
+                            ))}
+                        </select>
                     </div>
                 </div>
 

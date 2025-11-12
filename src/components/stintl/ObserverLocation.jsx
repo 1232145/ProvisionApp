@@ -3,11 +3,28 @@ import { Select } from 'antd';
 
 const { Option } = Select;
 
+/**
+ * ObserverLocation component for selecting or entering observer location
+ * Shows dropdown if config data is available, otherwise shows text input
+ * @param {object} props - Component props
+ * @param {Function} props.setObs - Callback function to update observer location value
+ * @param {string} props.data - Current observer location value
+ * @param {object} props.styles - Style object for component styling
+ * @param {object|null} props.config - Config object containing ObserverLocation array, or null if no config loaded
+ */
 function ObserverLocation({ setObs, data, styles, config }) {
+  /**
+   * Handles selection change from dropdown
+   * @param {string} value - Selected observer location value
+   */
   const handleSelectChange = (value) => {
     setObs(value);
   };
 
+  /**
+   * Handles input change from text field
+   * @param {Event} e - Input change event
+   */
   const handleInputChange = (e) => {
     setObs(e.currentTarget.value);
   };
@@ -27,13 +44,17 @@ function ObserverLocation({ setObs, data, styles, config }) {
       <p style={styles.labelContainer}>
         <span style={styles.label}>Obs location:</span>
       </p>
-      {/* Only show dropdown if config data is available */}
-      {hasConfigData && (
+      {hasConfigData ? (
         <Select
           placeholder="Select an observer location"
-          style={{ width: '50%', marginBottom: '10px' }}
+          style={{ width: '100%' }}
           onChange={handleSelectChange}
           allowClear
+          showSearch
+          optionFilterProp="children"
+          filterOption={(input, option) =>
+            option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+          }
           value={config.ObserverLocation.includes(data) ? data : undefined} // Set value based on input
         >
           {config.ObserverLocation.map((location, index) => (
@@ -42,16 +63,17 @@ function ObserverLocation({ setObs, data, styles, config }) {
             </Option>
           ))}
         </Select>
+      ) : (
+        <input
+          onChange={handleInputChange}
+          value={data}
+          placeholder="Observer location"
+          style={{
+            ...styles.inputField,
+            width: '100%'
+          }}
+        />
       )}
-      <input
-        onChange={handleInputChange}
-        value={data}
-        placeholder="Observer location"
-        style={{
-          ...styles.inputField,
-          width: hasConfigData ? undefined : '100%' // Full width when no dropdown
-        }}
-      />
     </div>
   );
 }

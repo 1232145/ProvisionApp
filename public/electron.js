@@ -23,7 +23,7 @@ function createWindow() {
   autoSaveFilePath = path.join(dir, "auto-save.json");
   console.log(`Auto-save will be stored at: ${autoSaveFilePath}`);
 
-  win.webContents.openDevTools();
+  // win.webContents.openDevTools();
 
   let isClosing = false; // To track if the close is confirmed by the user
 

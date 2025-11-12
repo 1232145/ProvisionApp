@@ -20,13 +20,12 @@ const styles = {
     justifyContent: "center",
     alignItems: "center",
     border: "1px solid #d9d9d9",
-    padding: "30px",
+    padding: "20px",
     borderRadius: "5px",
     boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
-    width: "50%",
+    width: "85%",
     margin: "0.5% auto",
     backgroundColor: "#f9f9f9",
-    maxWidth: "900px",
   },
 
   form: {
@@ -52,7 +51,7 @@ const styles = {
   },
 
   rightColumn: {
-    padding: "7.5px",
+    padding: "20px",
     flex: "1",
     textAlign: "right",
   },
@@ -68,7 +67,7 @@ const styles = {
 
   label: {
     fontWeight: "bold",
-    fontSize: "14px",
+    fontSize: "16px",
     color: "#333",
     marginRight: "10px",
   },
@@ -84,33 +83,48 @@ const styles = {
   },
 
   navigateBtn: {
-    width: "25%",
+    flex: "1",
     backgroundColor: "#1890ff",
     borderColor: "#1890ff",
     color: "white",
     padding: "8px 16px",
     borderRadius: "4px",
     textAlign: "center",
+    minWidth: "150px",
   },
 
   saveBtn: {
-    width: "25%",
+    flex: "1",
     backgroundColor: "green",
     borderColor: "green",
     color: "white",
     padding: "8px 16px",
     borderRadius: "4px",
     textAlign: "center",
+    minWidth: "150px",
   },
 
   inputField: {
-    width: "40%",
-    height: "25px",
+    width: "60%",
+    height: "32px",
     overflowX: "auto",
     marginLeft: "5px",
+    fontSize: "14px",
+    padding: "4px 8px",
+  },
+
+  inputContainer: {
+    width: "100%",
+    marginBottom: "15px",
   },
 };
 
+/**
+ * StintData component - Main component for managing stint and feeding data
+ * Handles stint information entry, feeding data management, CSV import/export, and auto-save functionality
+ * Provides UI for entering observer information, stint details, and switching to feeding data entry
+ * @returns {JSX.Element} The main stint data entry interface
+ */
 function StintData() {
   //feeding data
   const initialFeeding = {
@@ -154,7 +168,6 @@ function StintData() {
     if (!config) return null;
     
     // Config is already processed by configToJson, but we can add additional optimizations here
-    console.log('Config processed/memoized at:', new Date().toISOString());
     return config;
   }, [config]);
 
@@ -171,24 +184,25 @@ function StintData() {
 
 
   /**
-   * Sets the island data in stintl
-   * @param {*} val
+   * Sets the island value in the stint data state
+   * @param {string} val - The island name to set
    */
   const setIsland = (val) => {
     setStint({ ...stint, Island: val });
   };
 
   /**
-   * Sets the species data in stintl
-   * @param {*} val
+   * Sets the species value in the stint data state
+   * @param {string} val - The species name to set
    */
   const setSpecies = (val) => {
     setStint({ ...stint, Species: val });
   };
 
   /**
-   * Sets the first or last name data in stitnl
-   * @param {*} val
+   * Sets the first and last name in the stint data state
+   * Supports both string format (full name) and object format ({First_Name, Last_Name})
+   * @param {string|object} val - Either a full name string or an object with First_Name and Last_Name properties
    */
   const setName = (val) => {
     // backward compatibility: if a single string is provided, try splitting
@@ -205,44 +219,49 @@ function StintData() {
   };
 
   /**
-   * Sets the observer location data in stintl
-   * @param {*} val
+   * Sets the observer location value in the stint data state
+   * @param {string} val - The observer location to set
    */
   const setObserverLocation = (val) => {
     setStint({ ...stint, Observer_Location: val });
   };
 
   /**
-   * Sets the time arrive data to the current time and time depart data to empty
+   * Sets the start date/time for the stint
+   * @param {string} time - The date/time string for when the stint started
    */
   const setTimeArrive = (time) => {
     setStint({ ...stint, Date_Time_Start: time });
   };
 
   /**
-   * Sets the time depart data to the current time
+   * Sets the end date/time for the stint
+   * @param {string} time - The date/time string for when the stint ended
    */
   const setTimeDepart = (time) => {
     setStint({ ...stint, Date_Time_End: time });
   };
 
   /**
-   * Sets the feeding data in stintl
-   * @param {*} value
+   * Sets the feeding data array in the stint data state
+   * @param {Array} value - Array of feeding data objects
    */
   const setFeedings = (value) => {
     setStint({ ...stint, feedingData: value });
   };
 
   /**
-   * Sets the comment in stint data
-   * @param {*} value
+   * Sets the comment text in the stint data state
+   * @param {string} value - The comment text to set
    */
   const setComment = (value) => {
     setStint({ ...stint, Comment: value });
   };
 
-
+  /**
+   * Toggles between stint data view and feeding data view
+   * Also triggers auto-save when switching views
+   */
   const handleSwitchToFeeding = () => {
     setIsOpenF(!isOpenF);
     // Auto-save when switching between stint and feeding
@@ -250,23 +269,39 @@ function StintData() {
   };
 
   /**
-   * Converts json data to a string representation of csv
-   * @param {*} json
-   * @returns
+   * Checks if a CSV value needs to be quoted (contains special characters or leading/trailing whitespace)
+   * @param {*} value - The value to check
+   * @returns {boolean} True if the value needs quoting in CSV format
    */
   const csvNeedsQuoting = (value) => {
     const s = value == null ? "" : String(value);
     return /[",\n\r]/.test(s) || /^\s|\s$/.test(s);
   };
 
+  /**
+   * Escapes a value for CSV format by doubling quotes and wrapping in quotes if needed
+   * @param {*} value - The value to escape
+   * @returns {string} The escaped CSV value
+   */
   const csvEscape = (value) => {
     const s = value == null ? "" : String(value);
     const escaped = s.replace(/"/g, '""');
     return csvNeedsQuoting(escaped) ? `"${escaped}"` : escaped;
   };
 
+  /**
+   * Converts an array of rows to a CSV string
+   * @param {Array<Array>} rows - Array of row arrays, where each row is an array of values
+   * @returns {string} CSV formatted string
+   */
   const csvStringifyRows = (rows) => rows.map((row) => row.map(csvEscape).join(",")).join("\n");
 
+  /**
+   * Parses a CSV string into a 2D array of rows and columns
+   * Handles quoted fields, escaped quotes, and newlines within quoted fields
+   * @param {string} text - The CSV string to parse
+   * @returns {Array<Array<string>>} Array of rows, where each row is an array of field values
+   */
   const csvParse = (text) => {
     const rows = [];
     let row = [];
@@ -317,6 +352,12 @@ function StintData() {
     return rows;
   };
 
+  /**
+   * Converts a stint JSON object to CSV format
+   * Creates a flattened CSV where each row represents one feeding item
+   * @param {object} json - The stint data object containing stint info and feedingData array
+   * @returns {string} CSV formatted string ready for file download
+   */
   const jsonToCSV = (json) => {
     const header = [
       "StintID",
@@ -515,9 +556,10 @@ function StintData() {
   }
 
   /**
-   * Converts CSV data to a config object
-   * @param {*} csv
-   * @returns {object|null} JSON object or null if format is incorrect
+   * Converts CSV config file data to a JSON object
+   * Parses the config CSV and extracts unique values for each column (e.g., Species, Island, etc.)
+   * @param {string} csv - CSV string from the config file
+   * @returns {object|null} Config object with arrays of values for each column, or null if format is incorrect
    */
   function configToJson(csv) {
     const rowsRaw = csvParse(csv);
@@ -536,6 +578,7 @@ function StintData() {
       "Recipient",
       "PreySize",
       "PreyItem",
+      "Species",
     ];
     const headers = rows[0].map((header) => String(header).trim());
 
@@ -564,6 +607,11 @@ function StintData() {
     return json;
   }
 
+  /**
+   * Handles the save button click event
+   * Validates all required fields are filled, converts stint data to CSV, and triggers file download
+   * Shows error modal if any required fields are missing
+   */
   const handleSaveClick = () => {
     let csv = "";
     let data = stint;
@@ -628,6 +676,12 @@ function StintData() {
     saveAs(file, dowloadName);
   };
 
+  /**
+   * Handles file upload/opening for both stint CSV files and config CSV files
+   * Reads the file, parses CSV, and updates the appropriate state
+   * @param {Event} event - File input change event
+   * @param {string} type - Type of file: "stint" for stint data CSV or "config" for config CSV
+   */
   const handleOpenClick = (event, type) => {
     try {
       const file = event.target.files[0];
@@ -664,6 +718,11 @@ function StintData() {
     }
   };
 
+  /**
+   * Loads the last auto-saved data from the file system
+   * Communicates with Electron main process to retrieve auto-save file
+   * Shows success/error notifications based on the result
+   */
   const handleLoadLastSave = () => {
     try {
       ipcRenderer.removeAllListeners("load-auto-save");
@@ -734,7 +793,10 @@ function StintData() {
     checkSaveFileExists();
   }, []);
 
-  // Function to check if auto-save file exists
+  /**
+   * Checks if an auto-save file exists on the file system
+   * Sends IPC message to Electron main process to check for save file
+   */
   const checkSaveFileExists = () => {
     ipcRenderer.send("check-save-file-exists");
   };
@@ -793,6 +855,7 @@ function StintData() {
                   setSpecies={setSpecies}
                   data={stint.Species}
                   styles={styles}
+                  config={processedConfig}
                 />
                 <Comment
                   setComment={setComment}
