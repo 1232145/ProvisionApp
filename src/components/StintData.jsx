@@ -244,10 +244,22 @@ function StintData() {
 
   /**
    * Sets the feeding data array in the stint data state
-   * @param {Array} value - Array of feeding data objects
+   * @param {Array|Function} value - Array of feeding data objects or a function that returns an array
    */
   const setFeedings = useCallback((value) => {
-    setStint(prev => ({ ...prev, feedingData: value }));
+    if (typeof value === 'function') {
+      // If value is a function, call it with current feedingData
+      setStint(prev => {
+        const currentFeedings = Array.isArray(prev.feedingData) ? prev.feedingData : [];
+        const newFeedings = value(currentFeedings);
+        const feedingsArray = Array.isArray(newFeedings) ? newFeedings : [];
+        return { ...prev, feedingData: feedingsArray };
+      });
+    } else {
+      // Ensure value is always an array
+      const feedingsArray = Array.isArray(value) ? value : [];
+      setStint(prev => ({ ...prev, feedingData: feedingsArray }));
+    }
   }, []);
 
   /**
@@ -386,7 +398,8 @@ function StintData() {
     ];
     const csvRows = [header];
 
-    json.feedingData.forEach((feeding) => {
+    const feedingDataArray = Array.isArray(json.feedingData) ? json.feedingData : [];
+    feedingDataArray.forEach((feeding) => {
       feeding.Number_of_Items.forEach((item) => {
         //careful with Number_of_Items as it is not an integer anymore but JSON so feeding.Number_of_Items.length
         const row = [
@@ -627,7 +640,8 @@ function StintData() {
     });
 
     // Check for missing fields in feeding data
-    data.feedingData.forEach((feeding, feedingIndex) => {
+    const feedingDataArray = Array.isArray(data.feedingData) ? data.feedingData : [];
+    feedingDataArray.forEach((feeding, feedingIndex) => {
       Object.keys(feeding).forEach((key) => {
         if (Array.isArray(feeding[key])) {
           feeding[key].forEach((item, itemIndex) => {
@@ -695,7 +709,12 @@ function StintData() {
 
           if (type === "stint") {
             const stint = csvToJson(csv);
-            setStint(stint);
+            // Ensure feedingData is always an array
+            const safeStint = {
+              ...stint,
+              feedingData: Array.isArray(stint.feedingData) ? stint.feedingData : [initialFeeding]
+            };
+            setStint(safeStint);
           } else if (type === "config") {
             const config = configToJson(csv);
             setConfig(config);
@@ -731,7 +750,12 @@ function StintData() {
       ipcRenderer.on("load-auto-save", (event, data) => {
         try {
           if (data) {
-            setStint(data);
+            // Ensure feedingData is always an array
+            const safeData = {
+              ...data,
+              feedingData: Array.isArray(data.feedingData) ? data.feedingData : [initialFeeding]
+            };
+            setStint(safeData);
             notification.success({
               message: "Data Loaded",
               description: "Auto-save data loaded successfully.",

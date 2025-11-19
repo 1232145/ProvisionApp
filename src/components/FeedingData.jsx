@@ -375,12 +375,20 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
      * @param {number} index - The index in the feedings array where to save the current feeding
      */
     const handleSaveFeeding = useCallback((index) => {
-        let newFeedings = [...feedings];
-        newFeedings[index] = feeding;
-        setFeedings(newFeedings);
+        // Use functional form to avoid dependency on feedings
+        setFeedings(prevFeedings => {
+            // Ensure prevFeedings is an array
+            const feedingsArray = Array.isArray(prevFeedings) ? prevFeedings : [];
+            const newFeedings = [...feedingsArray];
+            // Ensure index is valid
+            if (index >= 0 && index < newFeedings.length) {
+                newFeedings[index] = feeding;
+            }
+            return newFeedings;
+        });
         //stamp the temporary feeding
         dispatchFeeding({ type: 'SET_FEEDING_TEMP', payload: feeding });
-    }, [feedings, feeding, setFeedings]);
+    }, [feeding, setFeedings]);
 
     /**
      * Creates a new empty feeding entry and adds it to the feedings array
@@ -388,23 +396,30 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
      * @returns {void}
      */
     const handleNewFeeding = useCallback(() => {
-        // Use ref to get latest feedings value
+        // Use ref to get latest feedings value (safely)
         const currentFeedings = feedingsRef.current;
-        const nextId = (currentFeedings?.length || 0) + 1;
+        // Ensure currentFeedings is an array
+        const feedingsArray = Array.isArray(currentFeedings) ? currentFeedings : [];
+        
+        const nextId = feedingsArray.length + 1;
         const newFeeding = { ...initialFeeding, FeedingID: nextId };
         
-        // Update multiple state values in one dispatch
+        // Update multiple state values in one dispatch (do this first, before updating feedings)
         dispatchFeeding({ 
             type: 'BATCH_UPDATE', 
             payload: {
                 feeding: newFeeding,
                 feedingTemp: newFeeding,
-                index: currentFeedings.length,
+                index: feedingsArray.length,
                 nIndex: 0
             }
         });
         
-        setFeedings(prevFeedings => [...(prevFeedings || []), newFeeding]);
+        // Then update the feedings array
+        setFeedings(prevFeedings => {
+            const prevArray = Array.isArray(prevFeedings) ? prevFeedings : [];
+            return [...prevArray, newFeeding];
+        });
     }, [initialFeeding, setFeedings]);
 
     /**
@@ -445,11 +460,15 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
      * Prevents deletion if it's the only remaining feeding
      */
     const handleDeleteFeeding = () => {
-        if (feedings.length > 1) {
+        const feedingsArray = Array.isArray(feedings) ? feedings : [];
+        if (feedingsArray.length > 1) {
             const ignore = ["FeedingID"];
             const filled = [];
 
-            Object.entries(feedings[index]).forEach(([key, value]) => {
+            const currentFeeding = feedingsArray[index];
+            if (!currentFeeding) return; // Safety check
+
+            Object.entries(currentFeeding).forEach(([key, value]) => {
                 if (!ignore.includes(key)) {
                     if (Array.isArray(value)) {
                         value.forEach((item, i) => {
@@ -466,7 +485,8 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
             });
 
             const confirmDelete = () => {
-                const newData = feedings.filter((item, i) => i !== index);
+                const feedingsArray = Array.isArray(feedings) ? feedings : [];
+                const newData = feedingsArray.filter((item, i) => i !== index);
                 setFeedings(newData);
 
                 if (index === 0) {
@@ -500,10 +520,10 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
      * @param {number} openIndex - The index of the feeding to switch to (0-based)
      */
     const handleOpenFeeding = useCallback((openIndex) => {
-        // Use refs to get latest values
-        const currentFeedings = feedingsRef.current;
+        // Use feedings prop directly (most up-to-date) instead of ref
+        const feedingsArray = Array.isArray(feedings) ? feedings : [];
         const currentFeeding = feedingRef.current;
-        const openF = currentFeedings?.[openIndex];
+        const openF = feedingsArray[openIndex];
         
         if (!openF) return; // Safety check
         
@@ -517,7 +537,7 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
                 nIndex: 0
             }
         });
-    }, []);
+    }, [feedings]);
 
     /**
      * Closes a feeding by marking it as closed (adds to closedIndex array)
@@ -582,21 +602,34 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
         setDisplayClosed(bool);
     }
 
-    //feature: when open feeding tab, switch to the latest feeding tab
+    //feature: when open feeding tab, switch to the latest feeding tab (only on initial mount or when feedings array grows)
+    const prevFeedingsLengthRef = useRef(feedings?.length || 0);
     useEffect(() => {
-        //index == 0 could be removed?
-        if (feedings.length > 0 && index === 0) {
-            handleOpenFeeding(feedings.length - 1);
+        const feedingsArray = Array.isArray(feedings) ? feedings : [];
+        const currentLength = feedingsArray.length;
+        const prevLength = prevFeedingsLengthRef.current;
+        
+        // Only auto-switch to latest feeding if:
+        // 1. Feedings array just grew (new feeding was added)
+        // 2. AND we're currently at index 0 (initial state)
+        // 3. AND there are feedings available
+        if (currentLength > prevLength && index === 0 && feedingsArray.length > 0) {
+            handleOpenFeeding(feedingsArray.length - 1);
         }
-    }, [feedings.length, index, handleOpenFeeding])
+        
+        // Update ref for next comparison
+        prevFeedingsLengthRef.current = currentLength;
+    }, [feedings, index, handleOpenFeeding])
 
     // Auto-save whenever feeding data changes (debounced)
     useEffect(() => {
-        if (feedingTemp !== feeding) {
+        // Ensure feedings is an array before saving
+        const feedingsArray = Array.isArray(feedings) ? feedings : [];
+        if (feedingTemp !== feeding && index >= 0 && index < feedingsArray.length) {
             handleSaveFeeding(index);
             debouncedAutoSave(stint);
         }
-    }, [feeding, feedingTemp, handleSaveFeeding, index, stint, debouncedAutoSave])
+    }, [feeding, feedingTemp, handleSaveFeeding, index, stint, debouncedAutoSave, feedings])
 
     // Memoized feeding actions for context (prevents unnecessary re-renders)
     // Note: handleSaveFeeding is NOT included here to avoid infinite loops
