@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import Island from "./stintl/Island";
 import Species from "./stintl/Species";
 import Name from "./stintl/Name";
@@ -187,76 +187,76 @@ function StintData() {
    * Sets the island value in the stint data state
    * @param {string} val - The island name to set
    */
-  const setIsland = (val) => {
-    setStint({ ...stint, Island: val });
-  };
+  const setIsland = useCallback((val) => {
+    setStint(prev => ({ ...prev, Island: val }));
+  }, []);
 
   /**
    * Sets the species value in the stint data state
    * @param {string} val - The species name to set
    */
-  const setSpecies = (val) => {
-    setStint({ ...stint, Species: val });
-  };
+  const setSpecies = useCallback((val) => {
+    setStint(prev => ({ ...prev, Species: val }));
+  }, []);
 
   /**
    * Sets the first and last name in the stint data state
    * Supports both string format (full name) and object format ({First_Name, Last_Name})
    * @param {string|object} val - Either a full name string or an object with First_Name and Last_Name properties
    */
-  const setName = (val) => {
+  const setName = useCallback((val) => {
     // backward compatibility: if a single string is provided, try splitting
     if (typeof val === 'string') {
       const parts = val.trim().split(/\s+/);
       const first = parts[0] || "";
       const last = parts.slice(1).join(" ") || "";
-      setStint({ ...stint, First_Name: first, Last_Name: last });
+      setStint(prev => ({ ...prev, First_Name: first, Last_Name: last }));
     } else if (val && typeof val === 'object') {
-      setStint({ ...stint, First_Name: val.First_Name || "", Last_Name: val.Last_Name || "" });
+      setStint(prev => ({ ...prev, First_Name: val.First_Name || "", Last_Name: val.Last_Name || "" }));
     } else {
-      setStint({ ...stint, First_Name: "", Last_Name: "" });
+      setStint(prev => ({ ...prev, First_Name: "", Last_Name: "" }));
     }
-  };
+  }, []);
 
   /**
    * Sets the observer location value in the stint data state
    * @param {string} val - The observer location to set
    */
-  const setObserverLocation = (val) => {
-    setStint({ ...stint, Observer_Location: val });
-  };
+  const setObserverLocation = useCallback((val) => {
+    setStint(prev => ({ ...prev, Observer_Location: val }));
+  }, []);
 
   /**
    * Sets the start date/time for the stint
    * @param {string} time - The date/time string for when the stint started
    */
-  const setTimeArrive = (time) => {
-    setStint({ ...stint, Date_Time_Start: time });
-  };
+  const setTimeArrive = useCallback((time) => {
+    setStint(prev => ({ ...prev, Date_Time_Start: time }));
+  }, []);
 
   /**
    * Sets the end date/time for the stint
    * @param {string} time - The date/time string for when the stint ended
    */
-  const setTimeDepart = (time) => {
-    setStint({ ...stint, Date_Time_End: time });
-  };
+  const setTimeDepart = useCallback((time) => {
+    setStint(prev => ({ ...prev, Date_Time_End: time }));
+  }, []);
 
   /**
    * Sets the feeding data array in the stint data state
    * @param {Array} value - Array of feeding data objects
    */
-  const setFeedings = (value) => {
-    setStint({ ...stint, feedingData: value });
-  };
+  const setFeedings = useCallback((value) => {
+    setStint(prev => ({ ...prev, feedingData: value }));
+  }, []);
 
   /**
    * Sets the comment text in the stint data state
    * @param {string} value - The comment text to set
    */
-  const setComment = (value) => {
-    setStint({ ...stint, Comment: value });
-  };
+  const setComment = useCallback((value) => {
+    setStint(prev => ({ ...prev, Comment: value }));
+  }, []);
 
   /**
    * Toggles between stint data view and feeding data view

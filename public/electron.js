@@ -16,8 +16,12 @@ function createWindow() {
   });
 
   // Load the React app (build version)
-  let dir = `${path.join(__dirname, "../build")}`;
-  win.loadFile(`${dir}/index.html`);
+  // In packaged app, electron.js is in build/, so __dirname is build/
+  // In development, electron.js is in public/, so we need ../build
+  let dir = __dirname.includes("app.asar") || __dirname.endsWith("build") 
+    ? __dirname 
+    : path.join(__dirname, "../build");
+  win.loadFile(path.join(dir, "index.html"));
   
   // Set auto-save path in the same directory as the app for easy access
   autoSaveFilePath = path.join(dir, "auto-save.json");

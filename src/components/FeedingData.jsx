@@ -7,7 +7,7 @@ import Provider from './feeding/Provider';
 import Recipient from './feeding/Recipient';
 import Timer from './Timer';
 import Comment from './Comment';
-import { useState, useEffect, useMemo, useReducer, useCallback } from 'react';
+import { useState, useEffect, useMemo, useReducer, useCallback, useRef } from 'react';
 import React from 'react';
 import { Button, Input, Checkbox, message, Modal, Collapse } from 'antd';  // Import Ant Design components
 import { useAutoSave } from '../hooks/useAutoSave';
@@ -232,6 +232,18 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
     // Destructure for easier access
     const { feeding, feedingTemp, index, nIndex } = feedingState;
 
+    // Use refs to access latest values without causing re-renders
+    const feedingRef = useRef(feeding);
+    const nIndexRef = useRef(nIndex);
+    const feedingsRef = useRef(feedings);
+    
+    // Update refs when values change
+    useEffect(() => {
+        feedingRef.current = feeding;
+        nIndexRef.current = nIndex;
+        feedingsRef.current = feedings;
+    }, [feeding, nIndex, feedings]);
+
     //for closing index (keeping as separate state since it's independent)
     const [closedIndex, setClosedIndex] = useState([]);
     const [displayClosed, setDisplayClosed] = useState(true);
@@ -246,107 +258,116 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
      * Sets the plot status for the current feeding (e.g., "Inside Plot", "Outside Plot")
      * @param {string} Plot - The plot status value
      */
-    const setPlot = (Plot) => {
+    const setPlot = useCallback((Plot) => {
         dispatchFeeding({ type: 'SET_PLOT', payload: Plot });
-    }
+    }, [dispatchFeeding]);
 
     /**
      * Sets the nest identifier for the current feeding
      * @param {string} Nest - The nest identifier (e.g., "P1", "P2")
      */
-    const setNest = (Nest) => {
+    const setNest = useCallback((Nest) => {
         dispatchFeeding({ type: 'SET_NEST', payload: Nest });
-    }
+    }, [dispatchFeeding]);
 
     /**
      * Sets the provider identifier for the current feeding
      * @param {string} Provider - The provider code (e.g., "BA", "BL", "FR")
      */
-    const setProvider = (Provider) => {
+    const setProvider = useCallback((Provider) => {
         dispatchFeeding({ type: 'SET_PROVIDER', payload: Provider });
-    }
+    }, [dispatchFeeding]);
 
     /**
      * Sets the entire Number_of_Items array for the current feeding
      * @param {Array} item - Array of item objects, each containing Recipient, Prey_Item, and Prey_Size
      */
-    const setNumberItems = (item) => {
+    const setNumberItems = useCallback((item) => {
         dispatchFeeding({ type: 'SET_NUMBER_ITEMS', payload: item });
-    }
+    }, [dispatchFeeding]);
 
     /**
      * Sets the recipient for the currently selected item in Number_of_Items
      * Updates the recipient value at the current nIndex position
      * @param {string} Recipient - The recipient identifier (e.g., "A", "B", "C")
      */
-    const setRecipient = (Recipient) => {
-        let items = [...{ ...feeding }.Number_of_Items];
-        let item = items[nIndex];
+    const setRecipient = useCallback((Recipient) => {
+        // Use refs to get latest values without dependency issues
+        const currentFeeding = feedingRef.current;
+        const currentNIndex = nIndexRef.current;
+        let items = [...currentFeeding.Number_of_Items];
+        let item = items[currentNIndex];
         item.Recipient = Recipient;
 
-        setNumberItems(items);
-    }
+        dispatchFeeding({ type: 'SET_NUMBER_ITEMS', payload: items });
+    }, [dispatchFeeding]);
 
     /**
      * Sets the prey item identifier for the currently selected item in Number_of_Items
      * Updates the prey item value at the current nIndex position
      * @param {string} Prey_Item - The prey item code (e.g., "H", "U", "R", "S")
      */
-    const setPreyItem = (Prey_Item) => {
-        let items = [...{ ...feeding }.Number_of_Items];
-        let item = items[nIndex];
+    const setPreyItem = useCallback((Prey_Item) => {
+        // Use refs to get latest values without dependency issues
+        const currentFeeding = feedingRef.current;
+        const currentNIndex = nIndexRef.current;
+        let items = [...currentFeeding.Number_of_Items];
+        let item = items[currentNIndex];
         item.Prey_Item = Prey_Item;
 
-        setNumberItems(items);
-    }
+        dispatchFeeding({ type: 'SET_NUMBER_ITEMS', payload: items });
+    }, [dispatchFeeding]);
 
     /**
      * Sets the prey size value for the currently selected item in Number_of_Items
      * Updates the prey size value at the current nIndex position
      * @param {string} Prey_Size - The prey size value (e.g., "0.25", "0.5", "1.0")
      */
-    const setPreySize = (Prey_Size) => {
-        let items = [...{ ...feeding }.Number_of_Items];
-        let item = items[nIndex];
+    const setPreySize = useCallback((Prey_Size) => {
+        // Use refs to get latest values without dependency issues
+        const currentFeeding = feedingRef.current;
+        const currentNIndex = nIndexRef.current;
+        let items = [...currentFeeding.Number_of_Items];
+        let item = items[currentNIndex];
         item.Prey_Size = Prey_Size;
 
-        setNumberItems(items);
-    }
+        dispatchFeeding({ type: 'SET_NUMBER_ITEMS', payload: items });
+    }, [dispatchFeeding]);
 
     /**
      * Sets the arrival time for the current feeding
      * Also clears the departure time when arrival time is set
      * @param {string} time - The arrival time string
      */
-    const setTimeArrive = (time) => {
+    const setTimeArrive = useCallback((time) => {
         // Extract only the 'HH:mm' part from the datetime string
         dispatchFeeding({ type: 'SET_TIME_ARRIVE', payload: time });
-    }
+    }, [dispatchFeeding]);
 
     /**
      * Sets the departure time for the current feeding
      * @param {string} time - The departure time string
      */
-    const setTimeDepart = (time) => {
+    const setTimeDepart = useCallback((time) => {
         dispatchFeeding({ type: 'SET_TIME_DEPART', payload: time });
-    }
+    }, [dispatchFeeding]);
 
     /**
      * Sets the comment text for the current feeding
      * @param {string} value - The comment text to set
      */
-    const setComment = (value) => {
+    const setComment = useCallback((value) => {
         dispatchFeeding({ type: 'SET_COMMENT', payload: value });
-    }
+    }, [dispatchFeeding]);
 
     /**
      * Sets the current index for Number_of_Items array (which item is currently being edited)
      * Helper function for NumberItems component to track which item in the array is selected
      * @param {number} value - The index of the selected item (0-based)
      */
-    const setNIndex = (value) => {
+    const setNIndex = useCallback((value) => {
         dispatchFeeding({ type: 'SET_NINDEX', payload: value });
-    }
+    }, [dispatchFeeding]);
 
     /**
      * Saves the current feeding data to the feedings array at the specified index
@@ -367,7 +388,9 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
      * @returns {void}
      */
     const handleNewFeeding = useCallback(() => {
-        const nextId = (feedings?.length || 0) + 1;
+        // Use ref to get latest feedings value
+        const currentFeedings = feedingsRef.current;
+        const nextId = (currentFeedings?.length || 0) + 1;
         const newFeeding = { ...initialFeeding, FeedingID: nextId };
         
         // Update multiple state values in one dispatch
@@ -376,16 +399,13 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
             payload: {
                 feeding: newFeeding,
                 feedingTemp: newFeeding,
-                index: feedings.length,
+                index: currentFeedings.length,
                 nIndex: 0
             }
         });
         
-        setFeedings([...
-            feedings,
-            newFeeding
-        ]);
-    }, [feedings, initialFeeding, setFeedings]);
+        setFeedings(prevFeedings => [...(prevFeedings || []), newFeeding]);
+    }, [initialFeeding, setFeedings]);
 
     /**
      * Creates a collapsible message display component for showing lists of items
@@ -480,8 +500,12 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
      * @param {number} openIndex - The index of the feeding to switch to (0-based)
      */
     const handleOpenFeeding = useCallback((openIndex) => {
-        //Move to another feeding data
-        const openF = feedings[openIndex];
+        // Use refs to get latest values
+        const currentFeedings = feedingsRef.current;
+        const currentFeeding = feedingRef.current;
+        const openF = currentFeedings?.[openIndex];
+        
+        if (!openF) return; // Safety check
         
         // Update multiple state values in one dispatch
         dispatchFeeding({ 
@@ -489,11 +513,11 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
             payload: {
                 index: openIndex,
                 feeding: openF,
-                feedingTemp: feeding, // stamp the current feeding as temp
+                feedingTemp: currentFeeding, // stamp the current feeding as temp
                 nIndex: 0
             }
         });
-    }, [feedings, feeding]);
+    }, []);
 
     /**
      * Closes a feeding by marking it as closed (adds to closedIndex array)
@@ -575,6 +599,8 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
     }, [feeding, feedingTemp, handleSaveFeeding, index, stint, debouncedAutoSave])
 
     // Memoized feeding actions for context (prevents unnecessary re-renders)
+    // Note: handleSaveFeeding is NOT included here to avoid infinite loops
+    // It depends on 'feeding' which changes frequently
     const feedingActions = useMemo(() => ({
         setPlot,
         setNest,
@@ -587,10 +613,23 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
         setTimeDepart,
         setComment,
         setNIndex,
-        handleSaveFeeding,
         handleNewFeeding,
         handleOpenFeeding
-    }), [handleSaveFeeding, handleNewFeeding, handleOpenFeeding, setRecipient, setPreySize, setPreyItem]);
+    }), [
+        setPlot,
+        setNest,
+        setProvider,
+        setNumberItems,
+        setRecipient,
+        setPreySize,
+        setPreyItem,
+        setTimeArrive,
+        setTimeDepart,
+        setComment,
+        setNIndex,
+        handleNewFeeding,
+        handleOpenFeeding
+    ]);
 
     return (
         <>
@@ -656,12 +695,17 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
                                 </div>
 
                                 <div style={styles.feedingItemListContainer}>
-                                    {feedings.map((item, i) => {
+                                    {(Array.isArray(feedings) ? feedings : []).map((item, i) => {
                                         if (closedIndex.includes(i) && !displayClosed) {
                                             return null;
                                         }
+                                        
+                                        // Safety check for undefined item
+                                        if (!item) {
+                                            return null;
+                                        }
 
-                                        const value = `Feeding ${i + 1}` + (item.Nest !== "" ? `: ${item.Nest}` : "");
+                                        const value = `Feeding ${i + 1}` + (item?.Nest !== "" ? `: ${item.Nest}` : "");
 
                                         return (
                                             <Input

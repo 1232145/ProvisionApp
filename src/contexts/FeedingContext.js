@@ -1,4 +1,4 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useMemo } from 'react';
 
 // Create the Feeding Context
 const FeedingContext = createContext();
@@ -14,11 +14,19 @@ export const useFeeding = () => {
 
 // Feeding Provider component
 export const FeedingProvider = ({ children, feedingState, dispatchFeeding, feedingActions }) => {
-    const value = {
-        ...feedingState, // feeding, feedingTemp, index, nIndex
+    // Memoize the context value to prevent unnecessary re-renders
+    // Extract primitive values from feedingState to avoid object reference issues
+    const { feeding, feedingTemp, index, nIndex } = feedingState;
+    
+    const value = useMemo(() => ({
+        // Include state values directly (primitives/objects, but memoized)
+        feeding,
+        feedingTemp,
+        index,
+        nIndex,
         dispatchFeeding,
         ...feedingActions // setPlot, setNest, setProvider, etc.
-    };
+    }), [feeding, feedingTemp, index, nIndex, dispatchFeeding, feedingActions]);
 
     return (
         <FeedingContext.Provider value={value}>
