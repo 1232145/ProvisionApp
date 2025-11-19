@@ -1,16 +1,21 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Button from '../Button';
+import { useConfig } from '../../contexts/ConfigContext';
+import { useStyles } from '../../contexts/StylesContext';
+import { useFeeding } from '../../contexts/FeedingContext';
 
-function Provider({ setProvider, data, styles, config }) {
-  // Set default providers
-  const defaultProviders = ["BA", "BL", "BR", "FR", "S", "U", "UA", "UB", "UC", "X", "AA", "AB", "BMB", "KF", "KM", "SMB", "TA"];
+// Set default providers outside component to avoid re-creation
+const defaultProviders = ["BA", "BL", "BR", "FR", "S", "U", "UA", "UB", "UC", "X", "AA", "AB", "BMB", "KF", "KM", "SMB", "TA"];
+
+function Provider({ data }) {
+  // Use context hooks instead of props (eliminates prop drilling)
+  const { slicedConfig } = useConfig();
+  const styles = useStyles();
+  const { setProvider } = useFeeding();
   
-  // Determine providers based on config or use default values
-  const initialProviders = config?.Provider ? config.Provider.slice(0, config.MaxEntries[0]) : defaultProviders.slice(0, 10); // Take first 10 or default
-  const [providers, setProviders] = useState(initialProviders);
-  
-  // Determine dropdown values based on config
-  const dropdownValues = config?.Provider ? config.Provider.slice(config.MaxEntries[0]) : defaultProviders.slice(10);
+  // Use pre-computed sliced data from context
+  const providers = slicedConfig?.Provider || defaultProviders.slice(0, 10);
+  const dropdownValues = slicedConfig?.ProviderDropdown || defaultProviders.slice(10);
 
   return (
     <div style={styles.feedingItemContainer}>

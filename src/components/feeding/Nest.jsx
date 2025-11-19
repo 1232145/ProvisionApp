@@ -1,16 +1,21 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Button from '../Button';
+import { useConfig } from '../../contexts/ConfigContext';
+import { useStyles } from '../../contexts/StylesContext';
+import { useFeeding } from '../../contexts/FeedingContext';
 
-function Nest({ setNest, data, styles, config }) {
-  // Set default nests
-  const defaultNests = ["P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9", "P10"];
+// Set default nests outside component to avoid re-creation
+const defaultNests = ["P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9", "P10"];
+
+function Nest({ data }) {
+  // Use context hooks instead of props (eliminates prop drilling)
+  const { slicedConfig } = useConfig();
+  const styles = useStyles();
+  const { setNest } = useFeeding();
   
-  // Determine nests based on config or use default values
-  const initialNests = config?.Nest ? config.Nest.slice(0, config.MaxEntries[0]) : defaultNests.slice(0, 10); // Take first 10 or default
-  const [nests, setNests] = useState(initialNests);
-  
-  // Determine dropdown values based on config
-  const dropdownValues = config?.Nest ? config.Nest.slice(config.MaxEntries[0]) : defaultNests.slice(10); // Take remaining or default
+  // Use pre-computed sliced data from context
+  const nests = slicedConfig?.Nest || defaultNests.slice(0, 10);
+  const dropdownValues = slicedConfig?.NestDropdown || defaultNests.slice(10);
 
   return (
     <div style={styles.feedingItemContainer}>

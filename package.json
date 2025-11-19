@@ -21,9 +21,11 @@
   "homepage": "./",
   "build": {
     "appId": "com.esp.my-electron-react-app",
+    "extraMetadata": {
+      "main": "build/electron.js"
+    },
     "files": [
-      "build/**/*",
-      "main.js"
+      "build/**/*"
     ],
     "directories": {
       "buildResources": "assets"
@@ -34,7 +36,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "craco build",
+    "build": "craco build && node copy-electron.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "build-electron": "npm run build && electron-builder --win --x64",

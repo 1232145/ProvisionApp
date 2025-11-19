@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { Button as AntButton, Select } from 'antd';
 
 const { Option } = Select;
@@ -8,15 +8,6 @@ const styles = {
     fontSize: '90%',
     marginBottom: '5%',
   },
-  select: (isSelected) => ({
-    width: '100%',
-    height: '100%',
-    marginTop: '2.5%',
-    fontSize: '90%',
-    color: isSelected ? 'white' : 'black',
-    border: isSelected ? '1px solid green' : '',
-    borderRadius: '7.5px'
-  }),
   selectedOption: {
     backgroundColor: 'green',
     color: 'white',
@@ -27,11 +18,52 @@ const styles = {
   },
 };
 
+// Static style objects to avoid recreation
+const selectStyleUnselected = {
+  width: '100%',
+  height: '100%',
+  marginTop: '2.5%',
+  fontSize: '90%',
+  color: 'black',
+  borderRadius: '7.5px'
+};
+
+const selectStyleSelected = {
+  width: '100%',
+  height: '100%',
+  marginTop: '2.5%',
+  fontSize: '90%',
+  color: 'white',
+  border: '1px solid green',
+  borderRadius: '7.5px'
+};
+
+const dropdownStyle = { fontSize: '16px' };
+
 function Button({ handleData, value, type, selected, dropdownValues }) {
+  // Memoize callbacks to prevent re-renders
+  const handleClear = useCallback(() => {
+    handleData("");
+  }, [handleData]);
+
+  const handleButtonClick = useCallback((e) => {
+    handleData(e.currentTarget.value);
+  }, [handleData]);
+
+  const handleSelectChange = useCallback((val) => {
+    handleData(val);
+  }, [handleData]);
+
+  // Memoize button style
+  const buttonStyle = useMemo(() => ({
+    ...styles.button,
+    ...(selected ? styles.selectedBtn : {}),
+  }), [selected]);
+
   if (value === "") {
     return (
       <AntButton
-        onClick={() => handleData("")}
+        onClick={handleClear}
         type="default"
         style={styles.button}
       >
@@ -41,19 +73,20 @@ function Button({ handleData, value, type, selected, dropdownValues }) {
   }
 
   if (value === "drop-down") {
-    const isSelectedValid = dropdownValues.includes(selected);
+    const isSelectedValid = dropdownValues?.includes(selected) || false;
+    const selectStyle = isSelectedValid ? selectStyleSelected : selectStyleUnselected;
 
     return (
       <Select
-        style={styles.select(isSelectedValid)}
+        style={selectStyle}
         value={isSelectedValid ? selected : ""}
-        onChange={(value) => handleData(value)}
+        onChange={handleSelectChange}
         placeholder="-- Select --"
-        dropdownStyle={{ fontSize: '16px' }}
+        dropdownStyle={dropdownStyle}
       >
         <Option value="">-- Select --</Option>
-        {dropdownValues.map((option, index) => (
-          <Option key={index} value={option}>
+        {dropdownValues?.map((option, index) => (
+          <Option key={option || index} value={option}>
             {option}
           </Option>
         ))}
@@ -63,12 +96,9 @@ function Button({ handleData, value, type, selected, dropdownValues }) {
 
   return (
     <AntButton
-      onClick={(e) => handleData(e.currentTarget.value)}
+      onClick={handleButtonClick}
       type={type ? type : "default"}
-      style={{
-        ...styles.button,
-        ...(selected ? styles.selectedBtn : {}),
-      }}
+      style={buttonStyle}
       value={value}
     >
       {value}
@@ -76,4 +106,14 @@ function Button({ handleData, value, type, selected, dropdownValues }) {
   );
 }
 
-export default Button;
+// Custom comparison function for React.memo to prevent unnecessary re-renders
+export default React.memo(Button, (prevProps, nextProps) => {
+    // Only re-render if these props actually change
+    return (
+        prevProps.value === nextProps.value &&
+        prevProps.type === nextProps.type &&
+        prevProps.selected === nextProps.selected &&
+        prevProps.handleData === nextProps.handleData &&
+        JSON.stringify(prevProps.dropdownValues) === JSON.stringify(nextProps.dropdownValues)
+    );
+});

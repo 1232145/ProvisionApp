@@ -16,55 +16,32 @@ function createWindow() {
   });
 
   // Load the React app (build version)
-  let dir = `${path.join(__dirname, "../build")}`;
+  // In packaged app, electron.js is in build/, so __dirname is build/
+  // In development, electron.js is in public/, so we need ../build
+  let dir = __dirname.includes("app.asar") || __dirname.endsWith("build") 
+    ? __dirname 
+    : path.join(__dirname, "../build");
+  win.loadFile(path.join(dir, "index.html"));
+  
+  // Set auto-save path in the same directory as the app for easy access
+  autoSaveFilePath = path.join(dir, "auto-save.json");
+  console.log(`Auto-save will be stored at: ${autoSaveFilePath}`);
 
-  win.loadFile(`${dir}/index.html`);
-  autoSaveFilePath = path.join(`${dir}/auto-save.json`);
-
-  win.webContents.openDevTools();
-
-  promptForAutoSaveDirectory();
-
-  function promptForAutoSaveDirectory() {
-    // Check if the auto-save file path already exists (to determine if the user has already selected a directory)
-    if (!fs.existsSync(autoSaveFilePath)) {
-      dialog
-        .showOpenDialog(win, {
-          properties: ["openDirectory"],
-          title: "Select a Directory to Save Auto-Save File", // Added title for better user experience
-          buttonLabel: "Select Folder", // Customize the button label
-        })
-        .then((result) => {
-          if (!result.canceled && result.filePaths.length > 0) {
-            // Set the directory path for saving the auto-save file
-            autoSaveFilePath = path.join(result.filePaths[0], "auto-save.json");
-            console.log(`Auto-save directory set to: ${autoSaveFilePath}`);
-          } else {
-            console.log("No directory selected for auto-save.");
-          }
-        })
-        .catch((err) => {
-          console.error("Error selecting directory:", err);
-        });
-    }
-  }
+  // win.webContents.openDevTools();
 
   let isClosing = false; // To track if the close is confirmed by the user
 
   win.on("close", (e) => {
     if (!isClosing) {
-      e.preventDefault(); // Prevent the default close behavior
-      win.webContents.send("warn-close"); // Show the close confirmation in React
-
-      // Listen for user confirmation to close
-      ipcMain.once("confirm-close", () => {
-        isClosing = true; // Mark as confirmed
-        win.close(); // Now close the window
-      });
-    } else {
-      // Allow close if confirmed
-      win.close();
+      e.preventDefault(); // Prevent the window from closing immediately
+      win.webContents.send("warn-close"); // Send a warning to the renderer
     }
+  });
+
+  // Listen for confirmation from the renderer to close the window
+  ipcMain.on("confirm-close", () => {
+    isClosing = true;
+    win.close();
   });
 }
 
@@ -92,16 +69,37 @@ ipcMain.on("check-auto-save", () => {
   });
 });
 
-// Listen for saving data and reset the auto-save file
+// Check if save file exists and get its timestamp
+ipcMain.on("check-save-file-exists", () => {
+  fs.stat(autoSaveFilePath, (err, stats) => {
+    if (err) {
+      // File doesn't exist
+      win.webContents.send("save-file-status", { exists: false, lastModified: null });
+    } else {
+      // File exists, send its modification time
+      win.webContents.send("save-file-status", { 
+        exists: true, 
+        lastModified: stats.mtime.toISOString() 
+      });
+    }
+  });
+});
+
+// Listen for saving data and save to auto-save file
 ipcMain.on("autosave", (event, data) => {
   // Ensure data is an object before saving, or initialize it as an empty object
   const saveData = data || {};
 
-  fs.writeFile(autoSaveFilePath, JSON.stringify(saveData), (err) => {
+  fs.writeFile(autoSaveFilePath, JSON.stringify(saveData, null, 2), (err) => {
     if (err) {
       console.error("Error saving auto-save:", err);
     } else {
       console.log("Auto-save updated");
+      // Update the save file status after successful save
+      win.webContents.send("save-file-status", { 
+        exists: true, 
+        lastModified: new Date().toISOString() 
+      });
     }
   });
 });

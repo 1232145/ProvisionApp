@@ -1,16 +1,21 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Button from '../Button';
+import { useConfig } from '../../contexts/ConfigContext';
+import { useStyles } from '../../contexts/StylesContext';
+import { useFeeding } from '../../contexts/FeedingContext';
 
-function Recipient({ setRecipient, data, styles, config }) {
-  // Default recipient values
-  const defaultRecipients = ["A", "A1", "B", "UC", "U", "K", "O", "S", "M", "Y", "C", "N", "R", "T", "UA"];
+// Default recipient values outside component to avoid re-creation
+const defaultRecipients = ["A", "A1", "B", "UC", "U", "K", "O", "S", "M", "Y", "C", "N", "R", "T", "UA"];
+
+function Recipient({ data }) {
+  // Use context hooks instead of props (eliminates prop drilling)
+  const { slicedConfig } = useConfig();
+  const styles = useStyles();
+  const { setRecipient } = useFeeding();
   
-  // Determine recipients based on config or use default values
-  const initialRecipients = config?.Recipient ? config.Recipient.slice(0, config.MaxEntries[0]) : defaultRecipients.slice(0, 10); // Take first 10 or default
-  const [recip, setRecip] = useState(initialRecipients);
-  
-  // Determine dropdown values based on config
-  const dropdownValues = config?.Recipient ? config.Recipient.slice(config.MaxEntries[0]) : defaultRecipients.slice(10);
+  // Use pre-computed sliced data from context
+  const recip = slicedConfig?.Recipient || defaultRecipients.slice(0, 10);
+  const dropdownValues = slicedConfig?.RecipientDropdown || defaultRecipients.slice(10);
 
   return (
     <div style={styles.feedingItemContainer}>

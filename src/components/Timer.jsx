@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Button, DatePicker, Input, Row, Col, notification } from 'antd';
+import React, { useState } from 'react';
+import { Button, DatePicker, Input, Row, Col } from 'antd';
 import moment from 'moment';
 
 function Timer({
@@ -10,6 +10,7 @@ function Timer({
     styles, // Styles for the component
     hasDatePicker = true, // Whether to show the DatePicker
     hasInput = true, // Whether to show the Input
+    hasButton = true, // Whether to show the "Now" button
     format = 'MM/DD/YYYY HH:mm', // Default date format
 }) {
     const [selectedDate, setSelectedDate] = useState(data ? moment(data, format) : null);
@@ -69,9 +70,11 @@ function Timer({
                     </Col>
                 )}
             </Row>
-            <Button onClick={handleButtonClick} style={{ width: '100%' }}>
-                {description}
-            </Button>
+            {hasButton && (
+                <Button onClick={handleButtonClick} style={{ width: '100%' }}>
+                    {description}
+                </Button>
+            )}
         </div>
     );
 }

@@ -1,16 +1,21 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Button from '../Button';
+import { useConfig } from '../../contexts/ConfigContext';
+import { useStyles } from '../../contexts/StylesContext';
+import { useFeeding } from '../../contexts/FeedingContext';
 
-function PreySize({ setPreySize, data, styles, config }) {
-  // Default prey sizes
-  const defaultPreySizes = ["0.25", "0.5", "0.75", "1", "1.25", "1.5", "1.75", "2", "2.25", "2.5", "2.75", "3", "3.25", "Unknown"];
+// Default prey sizes outside component to avoid re-creation
+const defaultPreySizes = ["0.25", "0.5", "0.75", "1", "1.25", "1.5", "1.75", "2", "2.25", "2.5", "2.75", "3", "3.25", "Unknown"];
+
+function PreySize({ data }) {
+  // Use context hooks instead of props (eliminates prop drilling)
+  const { slicedConfig } = useConfig();
+  const styles = useStyles();
+  const { setPreySize } = useFeeding();
   
-  // Determine prey sizes based on config or use default values
-  const initialPreySizes = config?.PreySize ? config.PreySize.slice(0, config.MaxEntries[0]) : defaultPreySizes.slice(0, 10); // Take first 10 or default
-  const [preySizes, setPreySizes] = useState(initialPreySizes);
-  
-  // Determine dropdown values based on config
-  const dropdownValues = config?.PreySize ? config.PreySize.slice(config.MaxEntries[0]) : defaultPreySizes.slice(10); // Remaining or default
+  // Use pre-computed sliced data from context
+  const preySizes = slicedConfig?.PreySize || defaultPreySizes.slice(0, 10);
+  const dropdownValues = slicedConfig?.PreySizeDropdown || defaultPreySizes.slice(10);
 
   return (
     <div style={styles.feedingItemContainer}>

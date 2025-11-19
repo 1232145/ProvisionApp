@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import Island from "./stintl/Island";
 import Species from "./stintl/Species";
 import Name from "./stintl/Name";
@@ -10,6 +10,7 @@ import { saveAs } from "file-saver";
 import FeedingData from "./FeedingData";
 import { Button, Row, Col, Upload, Modal, notification, message } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
+import { useAutoSave } from "../hooks/useAutoSave";
 const { ipcRenderer } = window.require("electron");
 
 const styles = {
@@ -19,13 +20,12 @@ const styles = {
     justifyContent: "center",
     alignItems: "center",
     border: "1px solid #d9d9d9",
-    padding: "30px",
+    padding: "20px",
     borderRadius: "5px",
     boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
-    width: "50%",
+    width: "85%",
     margin: "0.5% auto",
     backgroundColor: "#f9f9f9",
-    maxWidth: "900px",
   },
 
   form: {
@@ -51,7 +51,7 @@ const styles = {
   },
 
   rightColumn: {
-    padding: "7.5px",
+    padding: "20px",
     flex: "1",
     textAlign: "right",
   },
@@ -67,7 +67,7 @@ const styles = {
 
   label: {
     fontWeight: "bold",
-    fontSize: "14px",
+    fontSize: "16px",
     color: "#333",
     marginRight: "10px",
   },
@@ -83,38 +83,48 @@ const styles = {
   },
 
   navigateBtn: {
-    width: "25%",
+    flex: "1",
     backgroundColor: "#1890ff",
     borderColor: "#1890ff",
     color: "white",
     padding: "8px 16px",
     borderRadius: "4px",
     textAlign: "center",
+    minWidth: "150px",
   },
 
   saveBtn: {
-    width: "25%",
+    flex: "1",
     backgroundColor: "green",
     borderColor: "green",
     color: "white",
     padding: "8px 16px",
     borderRadius: "4px",
     textAlign: "center",
-  },
-
-  fileInput: {
-    width: "100%",
-    padding: "8px",
+    minWidth: "150px",
   },
 
   inputField: {
-    width: "40%",
-    height: "25px",
+    width: "60%",
+    height: "32px",
     overflowX: "auto",
     marginLeft: "5px",
+    fontSize: "14px",
+    padding: "4px 8px",
+  },
+
+  inputContainer: {
+    width: "100%",
+    marginBottom: "15px",
   },
 };
 
+/**
+ * StintData component - Main component for managing stint and feeding data
+ * Handles stint information entry, feeding data management, CSV import/export, and auto-save functionality
+ * Provides UI for entering observer information, stint details, and switching to feeding data entry
+ * @returns {JSX.Element} The main stint data entry interface
+ */
 function StintData() {
   //feeding data
   const initialFeeding = {
@@ -142,107 +152,211 @@ function StintData() {
     Species: "",
     Prey_Size_Method: "Numeric",
     Prey_Size_Reference: "Culmen length",
-    Name: "",
+    First_Name: "",
+    Last_Name: "",
     Observer_Location: "",
     Date_Time_Start: "",
     Date_Time_End: "",
-    Comment: "",
+    Comment: "", 
     feedingData: [initialFeeding],
   });
 
   const [config, setConfig] = useState(null);
 
-  console.log(stint.Island + "ISLAND");
+  // Memoize config processing to prevent expensive re-parsing
+  const processedConfig = useMemo(() => {
+    if (!config) return null;
+    
+    // Config is already processed by configToJson, but we can add additional optimizations here
+    return config;
+  }, [config]);
+
   const [stintID, setStintID] = useState(
-    `${stint.Island}-${stint.Species}-${stint.Date_Time_Start}-${stint.Name}`
+    `${stint.Island}-${stint.Species}-${stint.Date_Time_Start}-${stint.First_Name} ${stint.Last_Name}`
   );
 
   //display stintl/feeding data
   const [isOpenF, setIsOpenF] = useState(false);
 
-  /**
-   * Sets the island data in stintl
-   * @param {*} val
-   */
-  const setIsland = (val) => {
-    setStint({ ...stint, Island: val });
-  };
+  // Auto-save file status
+  const [saveFileExists, setSaveFileExists] = useState(false);
+  const [lastSaveTime, setLastSaveTime] = useState(null);
+
 
   /**
-   * Sets the species data in stintl
-   * @param {*} val
+   * Sets the island value in the stint data state
+   * @param {string} val - The island name to set
    */
-  const setSpecies = (val) => {
-    setStint({ ...stint, Species: val });
-  };
+  const setIsland = useCallback((val) => {
+    setStint(prev => ({ ...prev, Island: val }));
+  }, []);
 
   /**
-   * Sets the first or last name data in stitnl
-   * @param {*} val
+   * Sets the species value in the stint data state
+   * @param {string} val - The species name to set
    */
-  const setName = (val) => {
-    setStint({ ...stint, Name: val });
-  };
+  const setSpecies = useCallback((val) => {
+    setStint(prev => ({ ...prev, Species: val }));
+  }, []);
 
   /**
-   * Sets the observer location data in stintl
-   * @param {*} val
+   * Sets the first and last name in the stint data state
+   * Supports both string format (full name) and object format ({First_Name, Last_Name})
+   * @param {string|object} val - Either a full name string or an object with First_Name and Last_Name properties
    */
-  const setObserverLocation = (val) => {
-    setStint({ ...stint, Observer_Location: val });
-  };
-
-  /**
-   * Sets the time arrive data to the current time and time depart data to empty
-   */
-  const setTimeArrive = (time) => {
-    setStint({ ...stint, Date_Time_Start: time });
-  };
-
-  /**
-   * Sets the time depart data to the current time
-   */
-  const setTimeDepart = (time) => {
-    setStint({ ...stint, Date_Time_End: time });
-  };
-
-  /**
-   * Sets the feeding data in stintl
-   * @param {*} value
-   */
-  const setFeedings = (value) => {
-    setStint({ ...stint, feedingData: value });
-  };
-
-  /**
-   * Sets the comment in stint data
-   * @param {*} value
-   */
-  const setComment = (value) => {
-    setStint({ ...stint, Comment: value });
-  };
-
-  const simpleHash = (input) => {
-    // console.log(input.toString(36) + "ID");
-    return input;
-    let hash = 0;
-    for (let i = 0; i < input.length; i++) {
-      const char = input.charCodeAt(i);
-      hash = (hash << 5) - hash + char;
-      hash |= 0; // Convert to 32bit integer
+  const setName = useCallback((val) => {
+    // backward compatibility: if a single string is provided, try splitting
+    if (typeof val === 'string') {
+      const parts = val.trim().split(/\s+/);
+      const first = parts[0] || "";
+      const last = parts.slice(1).join(" ") || "";
+      setStint(prev => ({ ...prev, First_Name: first, Last_Name: last }));
+    } else if (val && typeof val === 'object') {
+      setStint(prev => ({ ...prev, First_Name: val.First_Name || "", Last_Name: val.Last_Name || "" }));
+    } else {
+      setStint(prev => ({ ...prev, First_Name: "", Last_Name: "" }));
     }
-    return hash.toString(36); // Convert to base-36 for shorter representation
-  };
+  }, []);
 
+  /**
+   * Sets the observer location value in the stint data state
+   * @param {string} val - The observer location to set
+   */
+  const setObserverLocation = useCallback((val) => {
+    setStint(prev => ({ ...prev, Observer_Location: val }));
+  }, []);
+
+  /**
+   * Sets the start date/time for the stint
+   * @param {string} time - The date/time string for when the stint started
+   */
+  const setTimeArrive = useCallback((time) => {
+    setStint(prev => ({ ...prev, Date_Time_Start: time }));
+  }, []);
+
+  /**
+   * Sets the end date/time for the stint
+   * @param {string} time - The date/time string for when the stint ended
+   */
+  const setTimeDepart = useCallback((time) => {
+    setStint(prev => ({ ...prev, Date_Time_End: time }));
+  }, []);
+
+  /**
+   * Sets the feeding data array in the stint data state
+   * @param {Array} value - Array of feeding data objects
+   */
+  const setFeedings = useCallback((value) => {
+    setStint(prev => ({ ...prev, feedingData: value }));
+  }, []);
+
+  /**
+   * Sets the comment text in the stint data state
+   * @param {string} value - The comment text to set
+   */
+  const setComment = useCallback((value) => {
+    setStint(prev => ({ ...prev, Comment: value }));
+  }, []);
+
+  /**
+   * Toggles between stint data view and feeding data view
+   * Also triggers auto-save when switching views
+   */
   const handleSwitchToFeeding = () => {
     setIsOpenF(!isOpenF);
+    // Auto-save when switching between stint and feeding
     ipcRenderer.send("autosave", stint);
   };
 
   /**
-   * Converts json data to a string representation of csv
-   * @param {*} json
-   * @returns
+   * Checks if a CSV value needs to be quoted (contains special characters or leading/trailing whitespace)
+   * @param {*} value - The value to check
+   * @returns {boolean} True if the value needs quoting in CSV format
+   */
+  const csvNeedsQuoting = (value) => {
+    const s = value == null ? "" : String(value);
+    return /[",\n\r]/.test(s) || /^\s|\s$/.test(s);
+  };
+
+  /**
+   * Escapes a value for CSV format by doubling quotes and wrapping in quotes if needed
+   * @param {*} value - The value to escape
+   * @returns {string} The escaped CSV value
+   */
+  const csvEscape = (value) => {
+    const s = value == null ? "" : String(value);
+    const escaped = s.replace(/"/g, '""');
+    return csvNeedsQuoting(escaped) ? `"${escaped}"` : escaped;
+  };
+
+  /**
+   * Converts an array of rows to a CSV string
+   * @param {Array<Array>} rows - Array of row arrays, where each row is an array of values
+   * @returns {string} CSV formatted string
+   */
+  const csvStringifyRows = (rows) => rows.map((row) => row.map(csvEscape).join(",")).join("\n");
+
+  /**
+   * Parses a CSV string into a 2D array of rows and columns
+   * Handles quoted fields, escaped quotes, and newlines within quoted fields
+   * @param {string} text - The CSV string to parse
+   * @returns {Array<Array<string>>} Array of rows, where each row is an array of field values
+   */
+  const csvParse = (text) => {
+    const rows = [];
+    let row = [];
+    let field = "";
+    let inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (inQuotes) {
+        if (ch === '"') {
+          const next = text[i + 1];
+          if (next === '"') {
+            field += '"';
+            i++;
+          } else {
+            inQuotes = false;
+          }
+        } else {
+          field += ch;
+        }
+      } else {
+        if (ch === '"') {
+          inQuotes = true;
+        } else if (ch === ',') {
+          row.push(field);
+          field = "";
+        } else if (ch === '\n') {
+          row.push(field);
+          rows.push(row);
+          row = [];
+          field = "";
+        } else if (ch === '\r') {
+          // ignore CR
+        } else {
+          field += ch;
+        }
+      }
+    }
+    // flush last field/row
+    if (inQuotes) {
+      // unclosed quote - treat as literal
+      inQuotes = false;
+    }
+    row.push(field);
+    // only push row if it has any content
+    if (row.length > 1 || (row.length === 1 && row[0] !== "")) {
+      rows.push(row);
+    }
+    return rows;
+  };
+
+  /**
+   * Converts a stint JSON object to CSV format
+   * Creates a flattened CSV where each row represents one feeding item
+   * @param {object} json - The stint data object containing stint info and feedingData array
+   * @returns {string} CSV formatted string ready for file download
    */
   const jsonToCSV = (json) => {
     const header = [
@@ -252,7 +366,8 @@ function StintData() {
       "Species",
       "Prey_Size_Method",
       "Prey_Size_Reference",
-      "Name",
+      "First_Name",
+      "Last_Name",
       "Observer_Location",
       "Date_Time_Start",
       "Date_Time_End",
@@ -269,7 +384,7 @@ function StintData() {
       "Plot_Status",
       "Feeding_Comment",
     ];
-    const csvRows = [header.join(",")];
+    const csvRows = [header];
 
     json.feedingData.forEach((feeding) => {
       feeding.Number_of_Items.forEach((item) => {
@@ -281,7 +396,8 @@ function StintData() {
           json.Species,
           json.Prey_Size_Method,
           json.Prey_Size_Reference,
-          json.Name,
+          json.First_Name,
+          json.Last_Name,
           json.Observer_Location,
           json.Date_Time_Start,
           json.Date_Time_End,
@@ -298,11 +414,11 @@ function StintData() {
           feeding.Plot_Status,
           feeding.Comment,
         ];
-        csvRows.push(row.join(","));
+        csvRows.push(row);
       });
     });
 
-    return csvRows.join("\n");
+    return csvStringifyRows(csvRows);
   };
 
   /**
@@ -311,11 +427,10 @@ function StintData() {
    * @returns {object|null} JSON object or null if format is incorrect
    */
   function csvToJson(csv) {
-    const lines = csv
-      .replace(/\r\n/g, "\n")
-      .split("\n")
-      .filter((line) => line.trim() !== "");
-    if (lines.length < 2) {
+    const rowsRaw = csvParse(csv);
+    // filter out completely empty rows
+    const rows = rowsRaw.filter((r) => r.some((v) => (v ?? '').trim() !== ''));
+    if (rows.length < 2) {
       console.error("Invalid CSV: Not enough data.");
       return stint;
     }
@@ -328,7 +443,9 @@ function StintData() {
       "Species",
       "Prey_Size_Method",
       "Prey_Size_Reference",
-      "Name",
+      // support either split or legacy Name
+      "First_Name",
+      "Last_Name",
       "Observer_Location",
       "Date_Time_Start",
       "Date_Time_End",
@@ -347,88 +464,91 @@ function StintData() {
     ];
 
     // Extract headers from CSV
-    const headers = lines[0].split(",").map((header) => header.trim());
+    const headers = rows[0].map((header) => String(header).trim());
 
     // Validate headers
-    const missingHeaders = requiredHeaders.filter(
-      (header) => !headers.includes(header)
-    );
+    const hasSplitName = headers.includes("First_Name") && headers.includes("Last_Name");
+    const hasLegacyName = headers.includes("Name");
+    const missingHeaders = requiredHeaders.filter((header) => {
+      if (header === "First_Name" || header === "Last_Name") {
+        return !(hasSplitName || hasLegacyName);
+      }
+      return !headers.includes(header);
+    });
     if (missingHeaders.length > 0) {
       message.error(
         `Invalid CSV: Missing headers -> ${missingHeaders.join(", ")}`
       );
       return stint;
     }
+    const headerIndex = headers.reduce((acc, key, idx) => {
+      acc[key] = idx;
+      return acc;
+    }, {});
 
-    const dataLines = lines.slice(1);
-    const feedingData = [];
-    let currentFeedingID = null;
-    let currentFeeding = null;
-    let currentNumberOfItems = [];
+    const dataRows = rows.slice(1);
 
-    for (const line of dataLines) {
-      const values = line.split(",").map((value) => value.trim());
-      const rowData = Object.fromEntries(
-        headers.map((key, index) => [key, values[index] || null])
-      );
-
-      const feedingID = rowData["FeedingID"];
-
-      if (feedingID && feedingID !== currentFeedingID) {
-        if (currentFeedingID !== null) {
-          currentFeeding.Number_of_Items = currentNumberOfItems;
-          feedingData.push(currentFeeding);
-        }
-        currentFeedingID = feedingID;
-        currentFeeding = {
+    // Group feeding rows by FeedingID preserving first-seen order
+    const feedingMap = new Map();
+    const feedingOrder = [];
+    for (const values of dataRows) {
+      const get = (key) => {
+        const i = headerIndex[key];
+        return i == null ? null : (values[i] ?? null);
+      };
+      const feedingID = get("FeedingID");
+      if (!feedingID) continue;
+      if (!feedingMap.has(feedingID)) {
+        feedingMap.set(feedingID, {
           FeedingID: feedingID,
-          Nest: rowData["Nest"],
-          Time_Arrive: rowData["Time_Arrive"],
-          Time_Depart: rowData["Time_Depart"],
-          Provider: rowData["Provider"],
-          Plot_Status: rowData["Plot_Status"],
-          Comment: rowData["Feeding_Comment"],
-        };
-        currentNumberOfItems = [];
+          Nest: get("Nest"),
+          Time_Arrive: get("Time_Arrive"),
+          Time_Depart: get("Time_Depart"),
+          Provider: get("Provider"),
+          Plot_Status: get("Plot_Status"),
+          Comment: get("Feeding_Comment"),
+          Number_of_Items: [],
+        });
+        feedingOrder.push(feedingID);
       }
-
-      if (
-        rowData["Recipient"] ||
-        rowData["Prey_Item"] ||
-        rowData["Prey_Size"]
-      ) {
-        currentNumberOfItems.push({
-          Recipient: rowData["Recipient"],
-          Prey_Item: rowData["Prey_Item"],
-          Prey_Size: rowData["Prey_Size"],
+      const hasItem = (get("Recipient") || get("Prey_Item") || get("Prey_Size"));
+      if (hasItem) {
+        feedingMap.get(feedingID).Number_of_Items.push({
+          Recipient: get("Recipient"),
+          Prey_Item: get("Prey_Item"),
+          Prey_Size: get("Prey_Size"),
         });
       }
     }
 
-    if (currentFeeding) {
-      currentFeeding.Number_of_Items = currentNumberOfItems;
-      feedingData.push(currentFeeding);
-    }
+    const feedingData = feedingOrder.map((id) => feedingMap.get(id));
 
-    const firstRowData = Object.fromEntries(
-      headers.map((key, index) => [
-        key,
-        dataLines[0]?.split(",")[index]?.trim() || null,
-      ])
-    );
+    const firstRow = dataRows[0] || [];
+    const pick = (key) => {
+      const i = headerIndex[key];
+      return i == null ? null : (firstRow[i] ?? null);
+    };
+
+    const firstName = hasSplitName ? pick("First_Name") : (pick("Name") || "").split(/\s+/)[0] || "";
+    const lastName = hasSplitName ? pick("Last_Name") : (() => {
+      const nm = pick("Name") || "";
+      const parts = nm.trim().split(/\s+/);
+      return parts.slice(1).join(" ") || "";
+    })();
 
     const jsonObject = {
-      StintID: firstRowData["StintID"],
-      Stint_Type: firstRowData["Stint_Type"],
-      Island: firstRowData["Island"],
-      Species: firstRowData["Species"],
-      Prey_Size_Method: firstRowData["Prey_Size_Method"],
-      Prey_Size_Reference: firstRowData["Prey_Size_Reference"],
-      Name: firstRowData["Name"],
-      Observer_Location: firstRowData["Observer_Location"],
-      Date_Time_Start: firstRowData["Date_Time_Start"],
-      Date_Time_End: firstRowData["Date_Time_End"],
-      Comment: firstRowData["Stint_Comment"],
+      StintID: pick("StintID"),
+      Stint_Type: pick("Stint_Type"),
+      Island: pick("Island"),
+      Species: pick("Species"),
+      Prey_Size_Method: pick("Prey_Size_Method"),
+      Prey_Size_Reference: pick("Prey_Size_Reference"),
+      First_Name: firstName,
+      Last_Name: lastName,
+      Observer_Location: pick("Observer_Location"),
+      Date_Time_Start: pick("Date_Time_Start"),
+      Date_Time_End: pick("Date_Time_End"),
+      Comment: pick("Stint_Comment"),
       feedingData: feedingData,
     };
 
@@ -436,16 +556,15 @@ function StintData() {
   }
 
   /**
-   * Converts CSV data to a config object
-   * @param {*} csv
-   * @returns {object|null} JSON object or null if format is incorrect
+   * Converts CSV config file data to a JSON object
+   * Parses the config CSV and extracts unique values for each column (e.g., Species, Island, etc.)
+   * @param {string} csv - CSV string from the config file
+   * @returns {object|null} Config object with arrays of values for each column, or null if format is incorrect
    */
   function configToJson(csv) {
-    const lines = csv
-      .replace(/\r\n/g, "\n")
-      .split("\n")
-      .filter((line) => line.trim() !== "");
-    if (lines.length < 2) {
+    const rowsRaw = csvParse(csv);
+    const rows = rowsRaw.filter((r) => r.some((v) => (v ?? '').trim() !== ''));
+    if (rows.length < 2) {
       console.error("Invalid CSV: Not enough data.");
       return config;
     }
@@ -459,10 +578,9 @@ function StintData() {
       "Recipient",
       "PreySize",
       "PreyItem",
-      "MaxEntries",
-      "ButtonWithSize",
+      "Species",
     ];
-    const headers = lines[0].split(",").map((header) => header.trim());
+    const headers = rows[0].map((header) => String(header).trim());
 
     // Check if all required headers exist
     const missingHeaders = requiredHeaders.filter(
@@ -477,22 +595,23 @@ function StintData() {
 
     const json = {};
     headers.forEach((key, index) => {
-      const values = lines
+      const values = rows
         .slice(1)
-        .map((line) => line.split(",")[index]?.trim()) // Trim and handle undefined values
-        .filter((value) => value !== undefined && value !== ""); // Filter out empty values
+        .map((r) => (r[index] == null ? "" : String(r[index]).trim()))
+        .filter((value) => value !== "");
 
-      // Ensure only the first valid value is taken for specific keys
-      if (["MaxEntries", "ButtonWithSize", "size"].includes(key)) {
-        json[key] = values.length > 0 ? values[0] : null;
-      } else {
-        json[key] = values;
-      }
+      // Store all values for each key
+      json[key] = values;
     });
 
     return json;
   }
 
+  /**
+   * Handles the save button click event
+   * Validates all required fields are filled, converts stint data to CSV, and triggers file download
+   * Shows error modal if any required fields are missing
+   */
   const handleSaveClick = () => {
     let csv = "";
     let data = stint;
@@ -557,6 +676,12 @@ function StintData() {
     saveAs(file, dowloadName);
   };
 
+  /**
+   * Handles file upload/opening for both stint CSV files and config CSV files
+   * Reads the file, parses CSV, and updates the appropriate state
+   * @param {Event} event - File input change event
+   * @param {string} type - Type of file: "stint" for stint data CSV or "config" for config CSV
+   */
   const handleOpenClick = (event, type) => {
     try {
       const file = event.target.files[0];
@@ -593,6 +718,11 @@ function StintData() {
     }
   };
 
+  /**
+   * Loads the last auto-saved data from the file system
+   * Communicates with Electron main process to retrieve auto-save file
+   * Shows success/error notifications based on the result
+   */
   const handleLoadLastSave = () => {
     try {
       ipcRenderer.removeAllListeners("load-auto-save");
@@ -602,11 +732,16 @@ function StintData() {
         try {
           if (data) {
             setStint(data);
+            notification.success({
+              message: "Data Loaded",
+              description: "Auto-save data loaded successfully.",
+              placement: "topRight",
+              duration: 2,
+            });
           } else {
             notification.info({
               message: "No Auto-Save Data",
-              description:
-                "It looks like there is no auto-save data available at the moment.",
+              description: "No auto-save data found.",
               placement: "topRight",
               duration: 1.5,
             });
@@ -625,12 +760,46 @@ function StintData() {
   //detect change in stint to create stintID
   useEffect(() => {
     setStintID(
-      `${stint.Island}-${stint.Species}-${stint.Date_Time_Start}-${stint.Name}`.replace(
-        " ",
-        "-"
-      )
+      `${stint.Island}-${stint.Species}-${stint.Date_Time_Start}-${stint.First_Name} ${stint.Last_Name}`
+        .replace(/\s+/g, "-")
     );
   }, [stint]);
+
+  // Initialize debounced auto-save hook (1 second delay)
+  const debouncedAutoSave = useAutoSave(1000);
+
+  // Auto-save whenever stint data changes (debounced)
+  useEffect(() => {
+    debouncedAutoSave(stint);
+  }, [stint, debouncedAutoSave]);
+
+  // Listen for save file status updates
+  useEffect(() => {
+    const handleSaveFileStatus = (event, { exists, lastModified }) => {
+      // Only update state if values actually changed to prevent unnecessary re-renders
+      setSaveFileExists(prevExists => prevExists !== exists ? exists : prevExists);
+      setLastSaveTime(prevTime => prevTime !== lastModified ? lastModified : prevTime);
+    };
+
+    ipcRenderer.on("save-file-status", handleSaveFileStatus);
+
+    return () => {
+      ipcRenderer.removeListener("save-file-status", handleSaveFileStatus);
+    };
+  }, []);
+
+  // Component initialization - check if save file exists
+  useEffect(() => {
+    checkSaveFileExists();
+  }, []);
+
+  /**
+   * Checks if an auto-save file exists on the file system
+   * Sends IPC message to Electron main process to check for save file
+   */
+  const checkSaveFileExists = () => {
+    ipcRenderer.send("check-save-file-exists");
+  };
 
   useEffect(() => {
     ipcRenderer.on("warn-close", () => {
@@ -662,7 +831,6 @@ function StintData() {
                   <div style={styles.labelContainer}>
                     <span style={styles.label}>StintID:</span>
                     {stintID}
-                    {/* {simpleHash(stintID)} */}
                   </div>
                   <div style={styles.labelContainer}>
                     <span style={styles.label}>Stint type:</span>{" "}
@@ -681,12 +849,13 @@ function StintData() {
                   setIsland={setIsland}
                   data={stint.Island}
                   styles={styles}
-                  config={config}
+                  config={processedConfig}
                 />
                 <Species
                   setSpecies={setSpecies}
                   data={stint.Species}
                   styles={styles}
+                  config={processedConfig}
                 />
                 <Comment
                   setComment={setComment}
@@ -697,15 +866,15 @@ function StintData() {
               <Col xs={24} md={12} style={styles.rightColumn}>
                 <Name
                   setName={setName}
-                  data={stint.Name}
+                  data={{ First_Name: stint.First_Name, Last_Name: stint.Last_Name }}
                   styles={styles}
-                  config={config}
+                  config={processedConfig}
                 />
                 <ObserverLocation
                   setObs={setObserverLocation}
                   data={stint.Observer_Location}
                   styles={styles}
-                  config={config}
+                  config={processedConfig}
                 />
                 <Timer
                   setTime={setTimeArrive}
@@ -714,6 +883,7 @@ function StintData() {
                   description="Start Stint Time"
                   styles={styles}
                   hasInput={false}
+                  hasButton={false}
                 />
                 <Timer
                   setTime={setTimeDepart}
@@ -722,6 +892,7 @@ function StintData() {
                   description="End Stint Time"
                   styles={styles}
                   hasInput={false}
+                  hasButton={false}
                 />
               </Col>
             </Row>
@@ -772,12 +943,28 @@ function StintData() {
 
             <div style={{ maxWidth: "100%", overflowX: "auto" }}>
               <DataTable stint={stint} />
-              <Button
-                style={{ width: "100%" }}
-                onClick={() => handleLoadLastSave()}
-              >
-                Load Save
-              </Button>
+              
+              {/* Conditional Load Save Button */}
+              {saveFileExists && (
+                <div style={{ marginTop: "10px" }}>
+                  <Button
+                    style={{ width: "100%", marginBottom: "8px" }}
+                    onClick={() => handleLoadLastSave()}
+                  >
+                    Load Save
+                  </Button>
+                  {lastSaveTime && (
+                    <div style={{ 
+                      textAlign: "center", 
+                      fontSize: "12px", 
+                      color: "#666",
+                      fontStyle: "italic"
+                    }}>
+                      Last saved: {new Date(lastSaveTime).toLocaleString()}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </>
