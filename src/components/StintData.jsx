@@ -11,7 +11,7 @@ import FeedingData from "./FeedingData";
 import { Button, Row, Col, Upload, Modal, notification, message } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import { useAutoSave } from "../hooks/useAutoSave";
-const { ipcRenderer } = window.require("electron");
+import platformFS from "../utils/platform";
 
 const styles = {
   startStint: {
@@ -277,7 +277,9 @@ function StintData() {
   const handleSwitchToFeeding = () => {
     setIsOpenF(!isOpenF);
     // Auto-save when switching between stint and feeding
-    ipcRenderer.send("autosave", stint);
+    platformFS.saveAutoSave(stint).catch(error => {
+      console.error('Error saving when switching views:', error);
+    });
   };
 
   /**
@@ -739,42 +741,38 @@ function StintData() {
 
   /**
    * Loads the last auto-saved data from the file system
-   * Communicates with Electron main process to retrieve auto-save file
+   * Works with Electron, Capacitor, and web platforms
    * Shows success/error notifications based on the result
    */
-  const handleLoadLastSave = () => {
+  const handleLoadLastSave = async () => {
     try {
-      ipcRenderer.removeAllListeners("load-auto-save");
-      ipcRenderer.send("check-auto-save");
-
-      ipcRenderer.on("load-auto-save", (event, data) => {
-        try {
-          if (data) {
-            // Ensure feedingData is always an array
-            const safeData = {
-              ...data,
-              feedingData: Array.isArray(data.feedingData) ? data.feedingData : [initialFeeding]
-            };
-            setStint(safeData);
-            notification.success({
-              message: "Data Loaded",
-              description: "Auto-save data loaded successfully.",
-              placement: "topRight",
-              duration: 2,
-            });
-          } else {
-            notification.info({
-              message: "No Auto-Save Data",
-              description: "No auto-save data found.",
-              placement: "topRight",
-              duration: 1.5,
-            });
-          }
-        } catch (error) {
-          message.error("Error loading auto-save data:", error);
-          alert("Error loading auto-save data.");
+      const data = await platformFS.loadAutoSave();
+      try {
+        if (data) {
+          // Ensure feedingData is always an array
+          const safeData = {
+            ...data,
+            feedingData: Array.isArray(data.feedingData) ? data.feedingData : [initialFeeding]
+          };
+          setStint(safeData);
+          notification.success({
+            message: "Data Loaded",
+            description: "Auto-save data loaded successfully.",
+            placement: "topRight",
+            duration: 2,
+          });
+        } else {
+          notification.info({
+            message: "No Auto-Save Data",
+            description: "No auto-save data found.",
+            placement: "topRight",
+            duration: 1.5,
+          });
         }
-      });
+      } catch (error) {
+        message.error("Error loading auto-save data:", error);
+        alert("Error loading auto-save data.");
+      }
     } catch (error) {
       message.error("Unexpected error:", error);
       alert("An unexpected error occurred. Please try again.");
@@ -797,50 +795,56 @@ function StintData() {
     debouncedAutoSave(stint);
   }, [stint, debouncedAutoSave]);
 
-  // Listen for save file status updates
-  useEffect(() => {
-    const handleSaveFileStatus = (event, { exists, lastModified }) => {
-      // Only update state if values actually changed to prevent unnecessary re-renders
-      setSaveFileExists(prevExists => prevExists !== exists ? exists : prevExists);
-      setLastSaveTime(prevTime => prevTime !== lastModified ? lastModified : prevTime);
-    };
-
-    ipcRenderer.on("save-file-status", handleSaveFileStatus);
-
-    return () => {
-      ipcRenderer.removeListener("save-file-status", handleSaveFileStatus);
-    };
-  }, []);
-
   // Component initialization - check if save file exists
   useEffect(() => {
     checkSaveFileExists();
+    
+    // For Electron, listen for save file status updates
+    if (platformFS.getPlatform() === 'electron') {
+      const handleSaveFileStatus = (event, { exists, lastModified }) => {
+        // Only update state if values actually changed to prevent unnecessary re-renders
+        setSaveFileExists(prevExists => prevExists !== exists ? exists : prevExists);
+        setLastSaveTime(prevTime => prevTime !== lastModified ? lastModified : prevTime);
+      };
+
+      const ipcRenderer = window.require('electron').ipcRenderer;
+      ipcRenderer.on("save-file-status", handleSaveFileStatus);
+
+      return () => {
+        ipcRenderer.removeListener("save-file-status", handleSaveFileStatus);
+      };
+    }
   }, []);
 
   /**
    * Checks if an auto-save file exists on the file system
-   * Sends IPC message to Electron main process to check for save file
+   * Works with Electron, Capacitor, and web platforms
    */
-  const checkSaveFileExists = () => {
-    ipcRenderer.send("check-save-file-exists");
+  const checkSaveFileExists = async () => {
+    try {
+      const status = await platformFS.checkSaveFileStatus();
+      setSaveFileExists(status.exists);
+      setLastSaveTime(status.lastModified);
+    } catch (error) {
+      console.error('Error checking save file status:', error);
+    }
   };
 
   useEffect(() => {
-    ipcRenderer.on("warn-close", () => {
+    const handleClose = () => {
       const shouldClose = window.confirm(
         "You have unsaved changes. Are you sure you want to exit?"
       );
 
       if (shouldClose) {
-        // Send confirmation to main process to close the window
-        ipcRenderer.send("confirm-close");
+        platformFS.confirmClose();
       }
-    });
+    };
+
+    const cleanup = platformFS.onCloseWarning(handleClose);
 
     // Cleanup when the component is unmounted
-    return () => {
-      ipcRenderer.removeAllListeners("warn-close");
-    };
+    return cleanup;
   }, []);
 
   return (

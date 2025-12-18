@@ -4,6 +4,10 @@
   "private": true,
   "dependencies": {
     "@ant-design/icons": "^5.4.0",
+    "@capacitor/app": "^8.0.0",
+    "@capacitor/cli": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/filesystem": "^8.0.0",
     "@craco/craco": "^7.1.0",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
@@ -37,9 +41,16 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "craco build && node copy-electron.js",
+    "build:web": "craco build",
+    "build:electron": "npm run build && electron-builder --win --x64",
+    "build:ios": "npm run build:web && npx cap sync ios",
+    "build:android": "npm run build:web && npx cap sync android",
+    "sync:ios": "npx cap sync ios",
+    "sync:android": "npx cap sync android",
+    "open:ios": "npx cap open ios",
+    "open:android": "npx cap open android",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "build-electron": "npm run build && electron-builder --win --x64",
     "electron": "electron ."
   },
   "eslintConfig": {

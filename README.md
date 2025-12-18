@@ -1,14 +1,18 @@
-# Getting Started with Create React App
+# Environmental Studies Data Collection Project
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This project is a cross-platform data collection application built with React. It can run on:
+- **Windows Desktop** (Electron)
+- **iOS/iPad** (Capacitor)
+- **Android** (Capacitor)
+- **Web Browser** (Progressive Web App)
 
 ## Available Scripts
 
-In the project directory, you can run:
+### Development
 
 ### `npm start`
 
-Runs the app in the development mode.\
+Runs the app in development mode.\
 Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
 
 The page will reload when you make changes.\
@@ -16,9 +20,63 @@ You may also see any lint errors in the console.
 
 ### `npm run electron`
 
-Runs the app in electron application.
+Runs the app in Electron application (Windows Desktop).
 
-The app will not reload when you make changes. So you should rebuild with npm run build everytime you make changes.
+The app will not reload when you make changes. So you should rebuild with `npm run build` every time you make changes.
+
+### Building for Different Platforms
+
+#### Windows Desktop (Electron)
+```bash
+npm run build:electron
+```
+This builds the React app and packages it as a Windows executable (.exe file).
+
+#### iOS/iPad
+```bash
+npm run build:ios
+```
+This builds the React app and syncs it with Capacitor for iOS. Then open Xcode:
+```bash
+npm run open:ios
+```
+
+**Requirements:**
+- macOS with Xcode installed
+- iOS development certificate (for device testing)
+- Node.js >= 22.0.0 (for Capacitor CLI)
+
+#### Android
+```bash
+npm run build:android
+```
+This builds the React app and syncs it with Capacitor for Android. Then open Android Studio:
+```bash
+npm run open:android
+```
+
+**Requirements:**
+- Android Studio installed
+- Android SDK configured
+- Node.js >= 22.0.0 (for Capacitor CLI)
+
+#### Web Only
+```bash
+npm run build:web
+```
+Builds the app for web deployment only (without Electron wrapper).
+
+### Syncing Capacitor (After Code Changes)
+
+If you've made changes to your React code and need to sync with native projects:
+
+```bash
+# For iOS
+npm run sync:ios
+
+# For Android
+npm run sync:android
+```
 
 ### `npm test`
 
@@ -27,13 +85,11 @@ See the section about [running tests](https://facebook.github.io/create-react-ap
 
 ### `npm run build`
 
-Builds the app for production to the `build` folder.\
+Builds the app for production to the `build` folder (includes Electron copy step).\
 It correctly bundles React in production mode and optimizes the build for the best performance.
 
 The build is minified and the filenames include the hashes.\
 Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
 
 ### `npm run eject`
 
