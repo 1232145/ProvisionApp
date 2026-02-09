@@ -1,10 +1,8 @@
 # Environmental Studies Data Collection Project
 
-This project is a cross-platform data collection application built with React. It can run on:
+This project is a cross-platform data collection application built with React. It supports:
 - **Windows Desktop** (Electron)
 - **iOS/iPad** (Capacitor)
-- **Android** (Capacitor)
-- **Web Browser** (Progressive Web App)
 
 ## Available Scripts
 
@@ -46,36 +44,13 @@ npm run open:ios
 - iOS development certificate (for device testing)
 - Node.js >= 22.0.0 (for Capacitor CLI)
 
-#### Android
-```bash
-npm run build:android
-```
-This builds the React app and syncs it with Capacitor for Android. Then open Android Studio:
-```bash
-npm run open:android
-```
-
-**Requirements:**
-- Android Studio installed
-- Android SDK configured
-- Node.js >= 22.0.0 (for Capacitor CLI)
-
-#### Web Only
-```bash
-npm run build:web
-```
-Builds the app for web deployment only (without Electron wrapper).
 
 ### Syncing Capacitor (After Code Changes)
 
-If you've made changes to your React code and need to sync with native projects:
+If you've made changes to your React code and need to sync with the iOS project:
 
 ```bash
-# For iOS
 npm run sync:ios
-
-# For Android
-npm run sync:android
 ```
 
 ### `npm test`

@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 
-// Initialize Capacitor if available (for iOS/Android)
+// Initialize Capacitor if available (for iOS)
 if (typeof window !== 'undefined' && window.Capacitor) {
   import('@capacitor/core').then(({ Capacitor }) => {
     // Capacitor is already initialized, but we can add any setup here if needed

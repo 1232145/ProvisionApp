@@ -6,12 +6,14 @@ import ObserverLocation from "./stintl/ObserverLocation";
 import DataTable from "./stintl/DataTable";
 import Timer from "./Timer";
 import Comment from "./Comment";
-import { saveAs } from "file-saver";
+// import { saveAs } from "file-saver"; Removed file-saver import - using platform-aware save instead
 import FeedingData from "./FeedingData";
 import { Button, Row, Col, Upload, Modal, notification, message } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import { useAutoSave } from "../hooks/useAutoSave";
 import platformFS from "../utils/platform";
+
+const IOS_DEBUG = true;
 
 const styles = {
   startStint: {
@@ -685,11 +687,42 @@ function StintData() {
     // If all information is filled
     csv += jsonToCSV(data);
 
-    const file = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const fileName = `${stintID}.csv`;
 
-    const dowloadName = stintID;
-
-    saveAs(file, dowloadName);
+    // Use platform-aware save function
+    platformFS.saveFile(csv, fileName).then((fileUri) => {
+      if (fileUri && platformFS.getPlatform() === 'capacitor') {
+        // Show success message
+        message.success(`File saved: ${fileName}`, 5);
+        
+        // Only show detailed file location modal if IOS_DEBUG is true
+        if (IOS_DEBUG) {
+          console.log('File saved at:', fileUri);
+          Modal.info({
+            title: 'File Saved Successfully',
+            content: (
+              <div>
+                <p><strong>File:</strong> {fileName}</p>
+                <p><strong>Location:</strong></p>
+                <p style={{ wordBreak: 'break-all', fontSize: '12px', fontFamily: 'monospace' }}>
+                  {fileUri}
+                </p>
+                <p style={{ marginTop: '10px', fontSize: '12px', color: '#666' }}>
+                  On iOS Simulator: Files are in the app's Documents directory.<br/>
+                  On real device: Access via Files app → On My iPhone/iPad → provision
+                </p>
+              </div>
+            ),
+            width: 600
+          });
+        }
+      } else {
+        message.success(`File saved: ${fileName}`);
+      }
+    }).catch((error) => {
+      console.error('Error saving file:', error);
+      message.error('Failed to save file. Please try again.');
+    });
   };
 
   /**
@@ -746,36 +779,38 @@ function StintData() {
    */
   const handleLoadLastSave = async () => {
     try {
+      console.log('Loading auto-save...');
       const data = await platformFS.loadAutoSave();
-      try {
-        if (data) {
-          // Ensure feedingData is always an array
-          const safeData = {
-            ...data,
-            feedingData: Array.isArray(data.feedingData) ? data.feedingData : [initialFeeding]
-          };
-          setStint(safeData);
-          notification.success({
-            message: "Data Loaded",
-            description: "Auto-save data loaded successfully.",
-            placement: "topRight",
-            duration: 2,
-          });
-        } else {
-          notification.info({
-            message: "No Auto-Save Data",
-            description: "No auto-save data found.",
-            placement: "topRight",
-            duration: 1.5,
-          });
-        }
-      } catch (error) {
-        message.error("Error loading auto-save data:", error);
-        alert("Error loading auto-save data.");
+      if (data) {
+        // Ensure feedingData is always an array
+        const safeData = {
+          ...data,
+          feedingData: Array.isArray(data.feedingData) ? data.feedingData : [initialFeeding]
+        };
+        setStint(safeData);
+        notification.success({
+          message: "Data Loaded",
+          description: "Auto-save data loaded successfully.",
+          placement: "topRight",
+          duration: 2,
+        });
+      } else {
+        notification.info({
+          message: "No Auto-Save Data",
+          description: "No auto-save data found.",
+          placement: "topRight",
+          duration: 1.5,
+        });
       }
     } catch (error) {
-      message.error("Unexpected error:", error);
-      alert("An unexpected error occurred. Please try again.");
+      console.error('Error loading auto-save:', error);
+      message.error("Error loading auto-save data: " + error.message);
+      notification.error({
+        message: "Error Loading Data",
+        description: "Failed to load auto-save data. Please try again.",
+        placement: "topRight",
+        duration: 3,
+      });
     }
   };
 
@@ -801,18 +836,25 @@ function StintData() {
     
     // For Electron, listen for save file status updates
     if (platformFS.getPlatform() === 'electron') {
-      const handleSaveFileStatus = (event, { exists, lastModified }) => {
-        // Only update state if values actually changed to prevent unnecessary re-renders
-        setSaveFileExists(prevExists => prevExists !== exists ? exists : prevExists);
-        setLastSaveTime(prevTime => prevTime !== lastModified ? lastModified : prevTime);
-      };
+      try {
+        const handleSaveFileStatus = (event, { exists, lastModified }) => {
+          // Only update state if values actually changed to prevent unnecessary re-renders
+          setSaveFileExists(prevExists => prevExists !== exists ? exists : prevExists);
+          setLastSaveTime(prevTime => prevTime !== lastModified ? lastModified : prevTime);
+        };
 
-      const ipcRenderer = window.require('electron').ipcRenderer;
-      ipcRenderer.on("save-file-status", handleSaveFileStatus);
+        // Safely check for window.require before using it
+        if (typeof window !== 'undefined' && typeof window.require === 'function') {
+          const ipcRenderer = window.require('electron').ipcRenderer;
+          ipcRenderer.on("save-file-status", handleSaveFileStatus);
 
-      return () => {
-        ipcRenderer.removeListener("save-file-status", handleSaveFileStatus);
-      };
+          return () => {
+            ipcRenderer.removeListener("save-file-status", handleSaveFileStatus);
+          };
+        }
+      } catch (error) {
+        console.warn('Electron IPC not available:', error);
+      }
     }
   }, []);
 
@@ -832,12 +874,22 @@ function StintData() {
 
   useEffect(() => {
     const handleClose = () => {
-      const shouldClose = window.confirm(
-        "You have unsaved changes. Are you sure you want to exit?"
-      );
+      // Check if there are unsaved changes
+      // For iOS, we'll auto-save when app goes to background
+      if (platformFS.getPlatform() === 'capacitor') {
+        // On iOS, auto-save when app goes to background
+        // The auto-save hook should handle this, but we can trigger it here too
+        console.log('App going to background - auto-saving...');
+        // Auto-save will be handled by useAutoSave hook
+      } else {
+        // For Electron, show confirmation dialog
+        const shouldClose = window.confirm(
+          "You have unsaved changes. Are you sure you want to exit?"
+        );
 
-      if (shouldClose) {
-        platformFS.confirmClose();
+        if (shouldClose) {
+          platformFS.confirmClose();
+        }
       }
     };
 
