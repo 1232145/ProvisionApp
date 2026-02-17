@@ -9,7 +9,7 @@ import Timer from './Timer';
 import Comment from './Comment';
 import { useState, useEffect, useMemo, useReducer, useCallback, useRef } from 'react';
 import React from 'react';
-import { Button, Input, Checkbox, message, Modal, Collapse } from 'antd';  // Import Ant Design components
+import { Button, Input, Checkbox, message, Modal } from 'antd';
 import { useAutoSave } from '../hooks/useAutoSave';
 import { ConfigProvider } from '../contexts/ConfigContext';
 import { StylesProvider } from '../contexts/StylesContext';
@@ -95,8 +95,8 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
         ...styles,
         outerContainer: {
             border: '1px solid #d9d9d9',
-            margin: '10px 50px',
-            padding: '20px',
+            margin: '10px clamp(8px, 2vw, 20px)',
+            padding: 'clamp(12px, 2vw, 16px) clamp(8px, 1.5vw, 12px)',
             borderRadius: '5px',
             boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
             backgroundColor: '#f9f9f9',
@@ -113,7 +113,7 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
             borderRadius: '8px',
         },
         lowerMenuContainer: {
-
+            padding: 'clamp(4px, 1vw, 6px) clamp(4px, 1vw, 8px)',
         },
         stintlContainer: {
             border: '1px solid black',
@@ -139,21 +139,26 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
         feedingsContainer: {
             display: 'flex',
             flexDirection: 'column',
-            width: '550px',
-            height: '200px',
-            margin: '12.5px',
+            width: '100%',
+            minWidth: 0,
+            maxWidth: '100%',
+            height: 'clamp(140px, 25vw, 200px)',
             border: '1px solid black',
+            boxSizing: 'border-box',
+            overflow: 'hidden',
             justifyContent: 'space-between',
-            padding: '12px',
+            padding: 'clamp(4px, 1vw, 8px)',
             borderRadius: '8px',
+            fontSize: 'clamp(11px, 1.8vw, 14px)',
         },
         feedingItemListContainer: {
             flexGrow: 1,
             overflowY: 'auto',
+            overflowX: 'hidden',
             display: 'flex',
             flexDirection: 'row',
             flexWrap: 'wrap',
-            gap: '5px',
+            gap: 'clamp(4px, 1vw, 5px)',
             alignItems: 'flex-start',
         },
         flexRowCenter: {
@@ -185,10 +190,10 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
         feedingItemContainer: {
             border: '1px solid gray',
             borderRadius: '8px',
-            padding: '15px',
+            padding: 'clamp(8px, 2vw, 15px)',
             height: 'auto',
-            width: 'auto', //adjustable
-            minWidth: '150px',
+            width: 'auto',
+            minWidth: 'clamp(80px, 15vw, 150px)',
             backgroundColor: '#f9f9f9',
             boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
         },
@@ -423,35 +428,54 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
     }, [initialFeeding, setFeedings]);
 
     /**
-     * Creates a collapsible message display component for showing lists of items
-     * Used in modals to display arrays of data (e.g., filled fields, empty fields)
+     * Creates a clean message display for showing lists of items (e.g., filled fields, empty fields)
      * @param {Array} data - Array of items to display in the list
-     * @param {string} message - The message text to display above the list
-     * @returns {JSX.Element} React component with collapsible list
+     * @param {string} messageText - The message text to display above the list
+     * @param {Function} [onClose] - Optional callback for close button (used in message toast)
+     * @returns {JSX.Element} React component with styled list
      */
-    const displayItemsMessage = (data, message) => {
+    const displayItemsMessage = (data, messageText, onClose) => {
         return (
-            <div>
-                {message}
-                <Collapse 
-                    style={{ width: '100%', overflowY: 'auto' }}
-                    items={[
-                        {
-                            key: '1',
-                            label: 'View Details',
-                            children: (
-                                <ul>
-                                    {data.map((item, index) => (
-                                        <li key={index}>{item}</li>
-                                    ))}
-                                </ul>
-                            )
-                        }
-                    ]}
-                />
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', minWidth: '200px' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 500, marginBottom: '8px', color: 'inherit' }}>{messageText}</div>
+                    <ul style={{ 
+                        margin: 0, 
+                        paddingLeft: '20px', 
+                        maxHeight: '140px', 
+                        overflowY: 'auto',
+                        lineHeight: 1.6,
+                    }}>
+                        {data.map((item, index) => (
+                            <li key={index} style={{ marginBottom: '4px' }}>{item}</li>
+                        ))}
+                    </ul>
+                </div>
+                {onClose && (
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        aria-label="Close"
+                        style={{
+                            flexShrink: 0,
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '18px',
+                            lineHeight: 1,
+                            padding: '4px',
+                            color: 'inherit',
+                            opacity: 0.6,
+                        }}
+                        onMouseOver={(e) => { e.currentTarget.style.opacity = '1'; }}
+                        onMouseOut={(e) => { e.currentTarget.style.opacity = '0.6'; }}
+                    >
+                        ×
+                    </button>
+                )}
             </div>
-        )
-    }
+        );
+    };
 
     /**
      * Deletes the feeding data at the current index
@@ -567,7 +591,11 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
 
         if (emptyFields.length > 0) {
             message.error({
-                content: displayItemsMessage(emptyFields, " Please fill in the following fields:"),
+                content: displayItemsMessage(
+                    emptyFields,
+                    "Please fill in the following fields:",
+                    () => message.destroy()
+                ),
                 duration: 5,
             });
             return;
@@ -715,12 +743,27 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
                             <Plot setPlot={setPlot} data={feeding.Plot_Status} />
                         </div>
                     </div>
-                    <div style={{ ...styles.upperMenuContainer, ...styles.lowerMenuContainer }}>
-                        <div style={{ flexShrink: 1, minWidth: '0' }}>
+                    <div style={{ 
+                        ...styles.upperMenuContainer, 
+                        ...styles.lowerMenuContainer, 
+                        justifyContent: 'stretch',
+                        flexWrap: 'nowrap',
+                        gap: 'clamp(4px, 1vw, 8px)',
+                        overflow: 'visible',
+                    }}>
+                        <div style={{ 
+                            display: 'flex', 
+                            width: '100%',
+                            minWidth: 0, 
+                            gap: 'clamp(4px, 1vw, 8px)',
+                        }}>
+                        {/* The number of items container */}
+                        <div style={{ flex: '1 1 0%', minWidth: 0, boxSizing: 'border-box', overflow: 'hidden' }}>
                             <NumberItems setNumberItems={setNumberItems} data={feeding.Number_of_Items} changeIndex={setNIndex} nIndex={nIndex} styles={styles} />
                         </div>
-
-                        <div style={{ flexShrink: 1, minWidth: '0' }}>
+                        
+                        {/* The feeding List container */}
+                        <div style={{ flex: '1 1 0%', minWidth: 0, boxSizing: 'border-box', overflow: 'hidden' }}>
                             <div style={styles.feedingsContainer}>
                                 <div style={styles.flexRowCenter}>
                                     <p style={{ marginRight: '7.5px' }}>Show Closed Feeding:</p>
@@ -749,8 +792,9 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
                                                 style={{
                                                     ...(index === i ? styles.selectedBtn : { marginBottom: '8px' }),
                                                     width: 'auto',
-                                                    flexGrow: 1, // Ensure buttons grow
-                                                    minWidth: '150px', // Ensure a min width for wrapping
+                                                    flexGrow: 1,
+                                                    minWidth: 'clamp(80px, 15vw, 150px)',
+                                                    fontSize: 'clamp(11px, 1.8vw, 14px)',
                                                 }}
                                             />
                                         );
@@ -764,7 +808,7 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
                                 </div>
                             </div>
                         </div>
-
+                        </div>
                     </div>
                 </div>
 
