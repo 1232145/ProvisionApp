@@ -687,7 +687,11 @@ function StintData() {
     // If all information is filled
     csv += jsonToCSV(data);
 
-    const fileName = `${stintID}.csv`;
+    // Sanitize fileName: replace / and : with _ so we get a flat file (e.g. Gettysburg-ARTE-11_29_2024-21_21-Huy-Ngo.csv)
+    // instead of nested folders (Gettysburg-ARTE-11/29/2024-21:21-Huy-Ngo.csv creates subfolders)
+    const fileName = `${stintID}.csv`
+      .replace(/\//g, '_')
+      .replace(/:/g, '_');
 
     // Use platform-aware save function
     platformFS.saveFile(csv, fileName).then((fileUri) => {
