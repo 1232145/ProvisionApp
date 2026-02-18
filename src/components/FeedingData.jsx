@@ -577,7 +577,7 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
                 value.forEach((item, i) => {
                     Object.entries(item).forEach(([itemField, itemValue]) => {
                         if (itemValue === '') {
-                            emptyFields.push(`Item ${i + 1} > ${itemField}`);
+                            emptyFields.push(`Item ${i + 1}: ${itemField}`);
                         }
                     });
                 });
