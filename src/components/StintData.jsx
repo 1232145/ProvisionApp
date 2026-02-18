@@ -184,7 +184,6 @@ function StintData() {
   const [saveFileExists, setSaveFileExists] = useState(false);
   const [lastSaveTime, setLastSaveTime] = useState(null);
 
-
   /**
    * Sets the island value in the stint data state
    * @param {string} val - The island name to set
@@ -274,15 +273,21 @@ function StintData() {
 
   /**
    * Toggles between stint data view and feeding data view
+   * When switching FROM feeding view, accepts getFeedings() to sync unsaved edits before switching
    * Also triggers auto-save when switching views
    */
-  const handleSwitchToFeeding = () => {
-    setIsOpenF(!isOpenF);
-    // Auto-save when switching between stint and feeding
-    platformFS.saveAutoSave(stint).catch(error => {
+  const handleSwitchToFeeding = useCallback((getFeedings) => {
+    let stintToSave = stint;
+    if (typeof getFeedings === 'function' && isOpenF) {
+      const latestFeedings = getFeedings();
+      stintToSave = { ...stint, feedingData: latestFeedings };
+      setStint(prev => ({ ...prev, feedingData: latestFeedings }));
+    }
+    setIsOpenF(prev => !prev);
+    platformFS.saveAutoSave(stintToSave).catch(error => {
       console.error('Error saving when switching views:', error);
     });
-  };
+  }, [isOpenF, stint]);
 
   /**
    * Checks if a CSV value needs to be quoted (contains special characters or leading/trailing whitespace)
@@ -984,15 +989,22 @@ function StintData() {
             {/* Button and File Input */}
             <div style={styles.btnContainer}>
               <Button
+                type="default"
+                style={{ flex: 1, marginRight: "10px" }}
+                onClick={() => handleLoadLastSave()}
+              >
+                Load Save
+              </Button>
+              <Button
                 type="primary"
-                style={{ ...styles.navigateBtn, flex: 1, marginRight: "10px" }} // Adjust margin as needed
+                style={{ ...styles.navigateBtn, flex: 1, marginRight: "10px" }}
                 onClick={() => handleSwitchToFeeding()}
               >
                 {!isOpenF ? "Open Feeding" : "Back to Stint"}
               </Button>
               <Button
                 type="primary"
-                style={{ ...styles.saveBtn, flex: 1, marginRight: "10px" }} // Adjust margin as needed
+                style={{ ...styles.saveBtn, flex: 1, marginRight: "10px" }}
                 onClick={handleSaveClick}
               >
                 Save file
@@ -1002,9 +1014,9 @@ function StintData() {
                 showUploadList={false}
                 beforeUpload={(file) => {
                   handleOpenClick({ target: { files: [file] } }, "stint");
-                  return false; // Prevent automatic upload
+                  return false;
                 }}
-                style={{ flex: 1, marginRight: "10px" }} // Adjust margin as needed
+                style={{ flex: 1, marginRight: "10px" }}
               >
                 <Button icon={<UploadOutlined />} style={{ width: "100%" }}>
                   Upload File
@@ -1015,42 +1027,31 @@ function StintData() {
                 showUploadList={false}
                 beforeUpload={(file) => {
                   handleOpenClick({ target: { files: [file] } }, "config");
-                  return false; // Prevent automatic upload
+                  return false;
                 }}
-                style={{ flex: 1 }} // No margin needed here to fill space
+                style={{ flex: 1 }}
               >
                 <Button icon={<UploadOutlined />} style={{ width: "100%" }}>
                   Upload Config
                 </Button>
               </Upload>
             </div>
+            </div>
 
             <div style={{ maxWidth: "100%", overflowX: "auto" }}>
               <DataTable stint={stint} />
-              
-              {/* Conditional Load Save Button */}
-              {saveFileExists && (
-                <div style={{ marginTop: "10px" }}>
-                  <Button
-                    style={{ width: "100%", marginBottom: "8px" }}
-                    onClick={() => handleLoadLastSave()}
-                  >
-                    Load Save
-                  </Button>
-                  {lastSaveTime && (
-                    <div style={{ 
-                      textAlign: "center", 
-                      fontSize: "12px", 
-                      color: "#666",
-                      fontStyle: "italic"
-                    }}>
-                      Last saved: {new Date(lastSaveTime).toLocaleString()}
-                    </div>
-                  )}
+              {lastSaveTime && saveFileExists && (
+                <div style={{ 
+                  textAlign: "center", 
+                  fontSize: "12px", 
+                  color: "#666",
+                  fontStyle: "italic",
+                  marginTop: "8px"
+                }}>
+                  Last saved: {new Date(lastSaveTime).toLocaleString()}
                 </div>
               )}
             </div>
-          </div>
         </>
       ) : (
         <>
@@ -1068,6 +1069,7 @@ function StintData() {
           </div>
         </>
       )}
+
     </div>
   );
 }

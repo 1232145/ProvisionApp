@@ -17,8 +17,12 @@ const isElectron = () => {
 };
 
 const isCapacitor = () => {
-  return typeof window !== 'undefined' && 
-         window.Capacitor !== undefined;
+  if (typeof window === 'undefined') return false;
+  const cap = window.Capacitor;
+  if (!cap) return false;
+  // Prefer isNativePlatform for reliable detection (handles iOS/Android)
+  if (typeof cap.isNativePlatform === 'function') return cap.isNativePlatform();
+  return true; // Fallback if older Capacitor
 };
 
 const getPlatform = () => {
@@ -38,10 +42,8 @@ class PlatformFileSystem {
     this.filesystem = null;
     this.directory = null; // Directory enum for Capacitor
     this.app = null;
-    this.share = null; // Share plugin for Capacitor
     this.filesystemPromise = null;
     this.appPromise = null;
-    this.sharePromise = null;
     
     if (this.platform === 'electron') {
       try {
@@ -70,15 +72,6 @@ class PlatformFileSystem {
         console.warn('Capacitor App plugin not available:', e);
         return null;
       });
-      
-      // Pre-load Share plugin
-      this.sharePromise = import('@capacitor/share').then(module => {
-        this.share = module.Share;
-        return module.Share;
-      }).catch(e => {
-        console.warn('Capacitor Share plugin not available:', e);
-        return null;
-      });
     }
   }
 
@@ -92,9 +85,6 @@ class PlatformFileSystem {
       }
       if (!this.app && this.appPromise) {
         await this.appPromise;
-      }
-      if (!this.share && this.sharePromise) {
-        await this.sharePromise;
       }
     }
   }
@@ -180,34 +170,36 @@ class PlatformFileSystem {
     } else if (this.platform === 'capacitor') {
       await this.ensureCapacitorPlugins();
       if (this.filesystem && this.directory) {
-        try {
-          const fileName = 'auto-save.json';
-          // Ensure path doesn't start with /
-          const cleanPath = fileName.startsWith('/') ? fileName.substring(1) : fileName;
-          
-          const result = await this.filesystem.readFile({
-            path: cleanPath,
-            directory: this.directory.Documents
-          });
-          // Capacitor returns base64 encoded data, decode it
-          const decodedData = decodeURIComponent(escape(atob(result.data)));
-          const parsed = JSON.parse(decodedData);
-          console.log('Auto-save loaded successfully (Capacitor)');
-          return parsed;
-        } catch (error) {
-          // File doesn't exist or error reading - try localStorage fallback
-          console.log('No auto-save file found in Filesystem (Capacitor), checking localStorage...');
+        const fileName = 'auto-save.json';
+        const cleanPath = fileName.startsWith('/') ? fileName.substring(1) : fileName;
+
+        // Try Documents first, then Data (in case file ended up in different dir on iOS)
+        for (const dir of [this.directory.Documents, this.directory.Data]) {
           try {
-            const data = localStorage.getItem('auto-save');
-            if (data) {
-              console.log('Auto-save loaded from localStorage fallback');
-              return JSON.parse(data);
-            }
-          } catch (localError) {
-            console.error('Error loading from localStorage:', localError);
+            const result = await this.filesystem.readFile({
+              path: cleanPath,
+              directory: dir
+            });
+            const decodedData = decodeURIComponent(escape(atob(result.data)));
+            const parsed = JSON.parse(decodedData);
+            console.log('Auto-save loaded successfully (Capacitor)');
+            return parsed;
+          } catch (e) {
+            continue;
           }
-          return null;
         }
+        // File not in Filesystem - try localStorage fallback
+        console.log('No auto-save file found in Filesystem (Capacitor), checking localStorage...');
+        try {
+          const data = localStorage.getItem('auto-save');
+          if (data) {
+            console.log('Auto-save loaded from localStorage fallback');
+            return JSON.parse(data);
+          }
+        } catch (localError) {
+          console.error('Error loading from localStorage:', localError);
+        }
+        return null;
       }
       // Fallback to localStorage if Capacitor filesystem not available
       try {
@@ -246,11 +238,11 @@ class PlatformFileSystem {
     } else if (this.platform === 'capacitor') {
       await this.ensureCapacitorPlugins();
       if (this.filesystem && this.directory) {
+        const fileName = 'auto-save.json';
+        const cleanPath = fileName.startsWith('/') ? fileName.substring(1) : fileName;
+
+        // Try stat first
         try {
-          const fileName = 'auto-save.json';
-          // Ensure path doesn't start with /
-          const cleanPath = fileName.startsWith('/') ? fileName.substring(1) : fileName;
-          
           const stat = await this.filesystem.stat({
             path: cleanPath,
             directory: this.directory.Documents
@@ -259,7 +251,30 @@ class PlatformFileSystem {
             exists: true,
             lastModified: new Date(stat.mtime).toISOString()
           };
-        } catch (error) {
+        } catch (statError) {
+          // stat failed - try readFile as fallback (file may exist but stat could fail on some iOS configs)
+          for (const dir of [this.directory.Documents, this.directory.Data]) {
+            try {
+              await this.filesystem.readFile({
+                path: cleanPath,
+                directory: dir
+              });
+              return {
+                exists: true,
+                lastModified: new Date().toISOString()
+              };
+            } catch (e) {
+              continue;
+            }
+          }
+          // Also check localStorage (fallback save location)
+          const localData = localStorage.getItem('auto-save');
+          if (localData) {
+            return {
+              exists: true,
+              lastModified: new Date().toISOString()
+            };
+          }
           return {
             exists: false,
             lastModified: null
@@ -390,44 +405,6 @@ class PlatformFileSystem {
       console.warn('Running in development mode - using file download. Use Electron or iOS for production.');
       return this.saveFileDev(content, fileName);
     }
-  }
-
-  /**
-   * Share a file using Capacitor Share plugin (iOS only)
-   * Makes the file easily accessible via iOS share sheet
-   * @param {string} fileUri - URI of the file to share
-   * @param {string} fileName - Name of the file
-   * @returns {Promise} Promise that resolves when share dialog is shown
-   */
-  async shareFile(fileUri, fileName) {
-    if (this.platform === 'capacitor') {
-      await this.ensureCapacitorPlugins();
-      if (this.share && this.filesystem) {
-        try {
-          // Read the file content
-          const cleanPath = fileName.startsWith('/') ? fileName.substring(1) : fileName;
-          const result = await this.filesystem.readFile({
-            path: cleanPath,
-            directory: this.directory.Documents
-          });
-          
-          // Decode base64 data
-          const decodedData = decodeURIComponent(escape(atob(result.data)));
-          
-          // Share the file content
-          await this.share.share({
-            title: fileName,
-            text: decodedData,
-            dialogTitle: `Share ${fileName}`
-          });
-          return Promise.resolve();
-        } catch (error) {
-          console.error('Error sharing file:', error);
-          return Promise.reject(error);
-        }
-      }
-    }
-    return Promise.reject(new Error('Share not available on this platform'));
   }
 
   /**

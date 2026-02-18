@@ -8,6 +8,7 @@ import Recipient from './feeding/Recipient';
 import Timer from './Timer';
 import Comment from './Comment';
 import { useState, useEffect, useMemo, useReducer, useCallback, useRef } from 'react';
+import { flushSync } from 'react-dom';
 import React from 'react';
 import { Button, Input, Checkbox, message, Modal } from 'antd';
 import { useAutoSave } from '../hooks/useAutoSave';
@@ -380,36 +381,37 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
      * @param {number} index - The index in the feedings array where to save the current feeding
      */
     const handleSaveFeeding = useCallback((index) => {
-        // Use functional form to avoid dependency on feedings
         setFeedings(prevFeedings => {
-            // Ensure prevFeedings is an array
             const feedingsArray = Array.isArray(prevFeedings) ? prevFeedings : [];
             const newFeedings = [...feedingsArray];
-            // Ensure index is valid
             if (index >= 0 && index < newFeedings.length) {
                 newFeedings[index] = feeding;
             }
             return newFeedings;
         });
-        //stamp the temporary feeding
         dispatchFeeding({ type: 'SET_FEEDING_TEMP', payload: feeding });
     }, [feeding, setFeedings]);
 
     /**
      * Creates a new empty feeding entry and adds it to the feedings array
      * Automatically assigns the next FeedingID and switches to the new feeding
+     * Saves current feeding first to prevent data loss (e.g. Feeding 1 when creating Feeding 2)
      * @returns {void}
      */
     const handleNewFeeding = useCallback(() => {
-        // Use ref to get latest feedings value (safely)
-        const currentFeedings = feedingsRef.current;
-        // Ensure currentFeedings is an array
-        const feedingsArray = Array.isArray(currentFeedings) ? currentFeedings : [];
-        
+        const feedingsArray = Array.isArray(feedingsRef.current) ? feedingsRef.current : [];
         const nextId = feedingsArray.length + 1;
         const newFeeding = { ...initialFeeding, FeedingID: nextId };
         
-        // Update multiple state values in one dispatch (do this first, before updating feedings)
+        setFeedings(prevFeedings => {
+            const prevArray = Array.isArray(prevFeedings) ? prevFeedings : [];
+            const newFeedings = [...prevArray];
+            if (index >= 0 && index < newFeedings.length) {
+                newFeedings[index] = feeding;
+            }
+            return [...newFeedings, newFeeding];
+        });
+        
         dispatchFeeding({ 
             type: 'BATCH_UPDATE', 
             payload: {
@@ -419,13 +421,7 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
                 nIndex: 0
             }
         });
-        
-        // Then update the feedings array
-        setFeedings(prevFeedings => {
-            const prevArray = Array.isArray(prevFeedings) ? prevFeedings : [];
-            return [...prevArray, newFeeding];
-        });
-    }, [initialFeeding, setFeedings]);
+    }, [initialFeeding, setFeedings, index, feeding]);
 
     /**
      * Creates a clean message display for showing lists of items (e.g., filled fields, empty fields)
@@ -539,29 +535,30 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
 
     /**
      * Switches to a different feeding in the feedings array
-     * Saves the current feeding state before switching
+     * Saves the current feeding state before switching (prevents data loss)
      * Updates the feeding state, index, and nIndex to the selected feeding
      * @param {number} openIndex - The index of the feeding to switch to (0-based)
      */
     const handleOpenFeeding = useCallback((openIndex) => {
-        // Use feedings prop directly (most up-to-date) instead of ref
         const feedingsArray = Array.isArray(feedings) ? feedings : [];
-        const currentFeeding = feedingRef.current;
         const openF = feedingsArray[openIndex];
         
         if (!openF) return; // Safety check
         
-        // Update multiple state values in one dispatch
+        if (openIndex !== index && index >= 0 && index < feedingsArray.length) {
+            handleSaveFeeding(index);
+        }
+        
         dispatchFeeding({ 
             type: 'BATCH_UPDATE', 
             payload: {
                 index: openIndex,
                 feeding: openF,
-                feedingTemp: currentFeeding, // stamp the current feeding as temp
+                feedingTemp: openF,
                 nIndex: 0
             }
         });
-    }, [feedings]);
+    }, [feedings, index, handleSaveFeeding]);
 
     /**
      * Closes a feeding by marking it as closed (adds to closedIndex array)
@@ -630,6 +627,20 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
         setDisplayClosed(bool);
     }
 
+    // Sync reducer with feedings prop when component mounts (e.g. returning from Stint view)
+    // Fixes: Feeding 1 showed empty because reducer always started with initialFeeding on remount
+    useEffect(() => {
+        const feedingsArray = Array.isArray(feedings) ? feedings : [];
+        if (feedingsArray.length > 0) {
+            const firstFeeding = feedingsArray[0];
+            dispatchFeeding({
+                type: 'BATCH_UPDATE',
+                payload: { feeding: firstFeeding, feedingTemp: firstFeeding, index: 0, nIndex: 0 }
+            });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Run only on mount - feedings is from closure at mount time
+
     //feature: when open feeding tab, switch to the latest feeding tab (only on initial mount or when feedings array grows)
     const prevFeedingsLengthRef = useRef(feedings?.length || 0);
     useEffect(() => {
@@ -651,7 +662,6 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
 
     // Auto-save whenever feeding data changes (debounced)
     useEffect(() => {
-        // Ensure feedings is an array before saving
         const feedingsArray = Array.isArray(feedings) ? feedings : [];
         if (feedingTemp !== feeding && index >= 0 && index < feedingsArray.length) {
             handleSaveFeeding(index);
@@ -697,7 +707,13 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
             <div style={styles.outerContainer}>
                 <div style={styles.feedHeader}>
                     {isOpen && (
-                        <Button type="primary" onClick={onToggle}>
+                        <Button
+                            type="primary"
+                            onClick={() => {
+                                flushSync(() => handleSaveFeeding(index));
+                                onToggle();
+                            }}
+                        >
                             Back to Stint
                         </Button>
                     )}
