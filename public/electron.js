@@ -85,6 +85,34 @@ ipcMain.on("check-save-file-exists", () => {
   });
 });
 
+// Listen for CSV file save requests - opens a native save dialog
+ipcMain.on("save-file", async (event, { content, fileName }) => {
+  try {
+    const { canceled, filePath } = await dialog.showSaveDialog(win, {
+      defaultPath: fileName,
+      filters: [{ name: "CSV Files", extensions: ["csv"] }],
+    });
+
+    if (canceled || !filePath) {
+      win.webContents.send("save-file-result", false);
+      return;
+    }
+
+    fs.writeFile(filePath, content, "utf-8", (err) => {
+      if (err) {
+        console.error("Error saving file:", err);
+        win.webContents.send("save-file-result", false);
+      } else {
+        console.log("File saved:", filePath);
+        win.webContents.send("save-file-result", true);
+      }
+    });
+  } catch (error) {
+    console.error("Error in save-file handler:", error);
+    win.webContents.send("save-file-result", false);
+  }
+});
+
 // Listen for saving data and save to auto-save file
 ipcMain.on("autosave", (event, data) => {
   // Ensure data is an object before saving, or initialize it as an empty object
