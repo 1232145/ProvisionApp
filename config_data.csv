@@ -1,13 +1,34 @@
 Name,Island,ObserverLocation,Nest,Provider,Recipient,PreySize,PreyItem,Species
-Alice Johnson,A,NYC,P1,BA,A,0.25,H,ARTE
-Mark Smith,B,NYC,P2,BL,B,0.30,U,COTE
-Sophia Davis,C,LA,P3,FR,C,0.35,R,LAGU
-Liam Brown,D,Miami,P4,BR,D,0.40,S,TERN
-Olivia Wilson,E,Chicago,P5,U,E,0.45,A,GULL
-James Miller,F,Seattle,P6,X,F,0.50,H,ARTE
-Emily Garcia,G,Denver,P7,AA,G,0.55,AL,COTE
-Michael Martinez,H,Boston,P8,AB,H,0.60,K,LAGU
-Ava Rodriguez,I,Austin,P9,UC,I,0.65,EEL,TERN
-David Lee,J,Portland,P10,TA,J,0.70,DR,GULL
-Isabella Perez,K,San Francisco,P11,KF,K,0.75,C,ARTE
-Ethan Hernandez,L,Miami,P12,KM,L,0.80,B,COTE
+Huy Ngo,Seal Island,Blind 1,P1,BA,A,0.25,H,ARTE
+Sarah Kent,Matinicus Rock,Blind 2,P2,BL,A1,0.5,U,COTE
+Marcus Bell,Eastern Egg Rock,Blind 3,P3,BR,B,0.75,R,BLGU
+Jenna Torres,Metinic Island,Blind 4,P4,FR,UC,1,S,ATPU
+David Park,,,P5,S,U,1.25,UF,LAGU
+Olivia Shaw,,,P6,U,K,1.5,A,TERN
+Tom Reilly,,,P7,UA,O,1.75,HD,GULL
+Amy Chen,,,P8,UB,S,2,T,,
+Ryan Doyle,,,P9,UC,M,2.25,H or R,,
+Priya Nair,,,P10,X,Y,2.5,E,,
+Carlos Vega,,,P11,AA,C,2.75,ALE,,
+Megan Fox,,,P12,AB,N,3,AS,,
+James Wu,,,P13,BMB,R,3.25,B,,
+Nina Patel,,,P14,KF,T,Unknown,BR,,
+Leo Martin,,,P15,KM,UA,,CA,,
+,,,,SMB,,,CH,,
+,,,,TA,,,CU,,
+,,,,,,, EEL,,
+,,,P16,,,, F,,
+,,,P17,,,, G,,
+,,,P18,,,, K,,
+,,,P19,,,, L,,
+,,,P20,,,, M,,
+,,,,,,,P,,
+,,,,,,,Q,,
+,,,,,,,RF,,
+,,,,,,,SB,,
+,,,,,,,SH,,
+,,,,,,,SM,,
+,,,,,,,SN,,
+,,,,,,,SP,,
+,,,,,,,SS,,
+,,,,,,,UF1,,

@@ -24,6 +24,7 @@ yarn-error.log*
 
 # Electron
 /dist
+*.zip
 
 # Capacitor
 ios/

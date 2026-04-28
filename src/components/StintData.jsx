@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import Island from "./stintl/Island";
 import Species from "./stintl/Species";
 import Name from "./stintl/Name";
@@ -6,12 +6,12 @@ import ObserverLocation from "./stintl/ObserverLocation";
 import DataTable from "./stintl/DataTable";
 import Timer from "./Timer";
 import Comment from "./Comment";
-// import { saveAs } from "file-saver"; Removed file-saver import - using platform-aware save instead
 import FeedingData from "./FeedingData";
 import { Button, Row, Col, Upload, Modal, notification, message } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import { useAutoSave } from "../hooks/useAutoSave";
 import platformFS from "../utils/platform";
+import moment from "moment";
 
 const IOS_DEBUG = true;
 
@@ -143,6 +143,7 @@ function StintData() {
       },
     ],
     Plot_Status: "Outside Plot",
+    Species: "",
     Comment: "",
   };
 
@@ -151,7 +152,7 @@ function StintData() {
     StintID: null,
     Stint_Type: "Chick Provisioning",
     Island: "",
-    Species: "",
+    Species: [],
     Prey_Size_Method: "Numeric",
     Prey_Size_Reference: "Culmen length",
     First_Name: "",
@@ -183,6 +184,9 @@ function StintData() {
   // Auto-save file status
   const [saveFileExists, setSaveFileExists] = useState(false);
   const [lastSaveTime, setLastSaveTime] = useState(null);
+
+  // Track unsaved changes — ref avoids stale closures inside the close handler
+  const isDirtyRef = useRef(false);
 
   /**
    * Sets the island value in the stint data state
@@ -227,19 +231,25 @@ function StintData() {
     setStint(prev => ({ ...prev, Observer_Location: val }));
   }, []);
 
-  /**
-   * Sets the start date/time for the stint
-   * @param {string} time - The date/time string for when the stint started
-   */
+  // Keep a ref to the current start time for use in setTimeDepart without a stale closure
+  const startTimeRef = useRef(stint.Date_Time_Start);
+  useEffect(() => {
+    startTimeRef.current = stint.Date_Time_Start;
+  }, [stint.Date_Time_Start]);
+
   const setTimeArrive = useCallback((time) => {
     setStint(prev => ({ ...prev, Date_Time_Start: time }));
   }, []);
 
-  /**
-   * Sets the end date/time for the stint
-   * @param {string} time - The date/time string for when the stint ended
-   */
   const setTimeDepart = useCallback((time) => {
+    if (time && startTimeRef.current) {
+      const start = moment(startTimeRef.current, 'MM/DD/YYYY HH:mm');
+      const end = moment(time, 'MM/DD/YYYY HH:mm');
+      if (start.isValid() && end.isValid() && end.isBefore(start)) {
+        message.error("End time cannot be before start time.");
+        return;
+      }
+    }
     setStint(prev => ({ ...prev, Date_Time_End: time }));
   }, []);
 
@@ -404,6 +414,7 @@ function StintData() {
       "Number_of_Items",
       "Plot_Status",
       "Feeding_Comment",
+      "Feeding_Species",
     ];
     const csvRows = [header];
 
@@ -411,11 +422,12 @@ function StintData() {
     feedingDataArray.forEach((feeding) => {
       feeding.Number_of_Items.forEach((item) => {
         //careful with Number_of_Items as it is not an integer anymore but JSON so feeding.Number_of_Items.length
+        const speciesOut = Array.isArray(json.Species) ? json.Species.join(" & ") : (json.Species || "");
         const row = [
           json.StintID,
           json.Stint_Type,
           json.Island,
-          json.Species,
+          speciesOut,
           json.Prey_Size_Method,
           json.Prey_Size_Reference,
           json.First_Name,
@@ -435,6 +447,7 @@ function StintData() {
           feeding.Number_of_Items.length,
           feeding.Plot_Status,
           feeding.Comment,
+          feeding.Species || "",
         ];
         csvRows.push(row);
       });
@@ -529,6 +542,7 @@ function StintData() {
           Provider: get("Provider"),
           Plot_Status: get("Plot_Status"),
           Comment: get("Feeding_Comment"),
+          Species: get("Feeding_Species") || "",
           Number_of_Items: [],
         });
         feedingOrder.push(feedingID);
@@ -558,11 +572,16 @@ function StintData() {
       return parts.slice(1).join(" ") || "";
     })();
 
+    const rawSpecies = pick("Species") || "";
+    const speciesArray = rawSpecies
+      ? rawSpecies.split(" & ").map(s => s.trim()).filter(Boolean)
+      : [];
+
     const jsonObject = {
       StintID: pick("StintID"),
       Stint_Type: pick("Stint_Type"),
       Island: pick("Island"),
-      Species: pick("Species"),
+      Species: speciesArray,
       Prey_Size_Method: pick("Prey_Size_Method"),
       Prey_Size_Reference: pick("Prey_Size_Reference"),
       First_Name: firstName,
@@ -639,11 +658,14 @@ function StintData() {
     let data = stint;
     data.StintID = stintID;
     const emptyFields = [];
-    const excludeKey = ["Comment"]; //this can be missing in data
+    const excludeStintKey = ["Comment"];
+    const excludeFeedingKey = ["Comment", "Species"];
 
     //Check for missing fields in stint data
     Object.entries(data).forEach(([key, value]) => {
-      if (value === "" && !excludeKey.includes(key)) {
+      if (excludeStintKey.includes(key)) return;
+      const isEmpty = value === "" || (Array.isArray(value) && value.length === 0 && key !== "feedingData");
+      if (isEmpty) {
         emptyFields.push(`Stint: ${key}`);
       }
     });
@@ -652,6 +674,7 @@ function StintData() {
     const feedingDataArray = Array.isArray(data.feedingData) ? data.feedingData : [];
     feedingDataArray.forEach((feeding, feedingIndex) => {
       Object.keys(feeding).forEach((key) => {
+        if (excludeFeedingKey.includes(key)) return;
         if (Array.isArray(feeding[key])) {
           feeding[key].forEach((item, itemIndex) => {
             Object.keys(item).forEach((itemKey) => {
@@ -665,7 +688,7 @@ function StintData() {
             });
           });
         } else {
-          if (feeding[key] === "" && !excludeKey.includes(key)) {
+          if (feeding[key] === "") {
             emptyFields.push(`Feeding ${feedingIndex + 1}: ${key}`);
           }
         }
@@ -700,11 +723,9 @@ function StintData() {
 
     // Use platform-aware save function
     platformFS.saveFile(csv, fileName).then((fileUri) => {
+      isDirtyRef.current = false;  // clear unsaved-changes flag on success
       if (fileUri && platformFS.getPlatform() === 'capacitor') {
-        // Show success message
         message.success(`File saved: ${fileName}`, 5);
-        
-        // Only show detailed file location modal if IOS_DEBUG is true
         if (IOS_DEBUG) {
           console.log('File saved at:', fileUri);
           Modal.info({
@@ -825,8 +846,9 @@ function StintData() {
 
   //detect change in stint to create stintID
   useEffect(() => {
+    const speciesStr = Array.isArray(stint.Species) ? stint.Species.join("-") : (stint.Species || "");
     setStintID(
-      `${stint.Island}-${stint.Species}-${stint.Date_Time_Start}-${stint.First_Name} ${stint.Last_Name}`
+      `${stint.Island}-${speciesStr}-${stint.Date_Time_Start}-${stint.First_Name} ${stint.Last_Name}`
         .replace(/\s+/g, "-")
     );
   }, [stint]);
@@ -834,8 +856,9 @@ function StintData() {
   // Initialize debounced auto-save hook (1 second delay)
   const debouncedAutoSave = useAutoSave(1000);
 
-  // Auto-save whenever stint data changes (debounced)
+  // Auto-save and mark dirty whenever stint data changes
   useEffect(() => {
+    isDirtyRef.current = true;
     debouncedAutoSave(stint);
   }, [stint, debouncedAutoSave]);
 
@@ -883,19 +906,17 @@ function StintData() {
 
   useEffect(() => {
     const handleClose = () => {
-      // Check if there are unsaved changes
-      // For iOS, we'll auto-save when app goes to background
       if (platformFS.getPlatform() === 'capacitor') {
-        // On iOS, auto-save when app goes to background
-        // The auto-save hook should handle this, but we can trigger it here too
-        console.log('App going to background - auto-saving...');
-        // Auto-save will be handled by useAutoSave hook
+        // iOS: auto-save handles this
       } else {
-        // For Electron, show confirmation dialog
+        // No unsaved changes — close immediately without prompting
+        if (!isDirtyRef.current) {
+          platformFS.confirmClose();
+          return;
+        }
         const shouldClose = window.confirm(
           "You have unsaved changes. Are you sure you want to exit?"
         );
-
         if (shouldClose) {
           platformFS.confirmClose();
         }
@@ -903,8 +924,6 @@ function StintData() {
     };
 
     const cleanup = platformFS.onCloseWarning(handleClose);
-
-    // Cleanup when the component is unmounted
     return cleanup;
   }, []);
 
@@ -969,19 +988,18 @@ function StintData() {
                   setTime={setTimeArrive}
                   data={stint.Date_Time_Start}
                   label="Start Stint Time"
-                  description="Start Stint Time"
+                  description="Now"
                   styles={styles}
-                  hasInput={false}
-                  hasButton={false}
+                  hasDatePicker
                 />
                 <Timer
                   setTime={setTimeDepart}
                   data={stint.Date_Time_End}
                   label="End Stint Time"
-                  description="End Stint Time"
+                  description="Now"
                   styles={styles}
-                  hasInput={false}
-                  hasButton={false}
+                  hasDatePicker
+                  minDate={stint.Date_Time_Start ? moment(stint.Date_Time_Start, 'MM/DD/YYYY HH:mm') : null}
                 />
               </Col>
             </Row>

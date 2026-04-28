@@ -23,8 +23,8 @@ function createWindow() {
     : path.join(__dirname, "../build");
   win.loadFile(path.join(dir, "index.html"));
   
-  // Set auto-save path in the same directory as the app for easy access
-  autoSaveFilePath = path.join(dir, "auto-save.json");
+  // Use userData so writes succeed in packaged builds (app.asar is read-only)
+  autoSaveFilePath = path.join(app.getPath('userData'), "auto-save.json");
   console.log(`Auto-save will be stored at: ${autoSaveFilePath}`);
 
   // win.webContents.openDevTools();
@@ -122,7 +122,6 @@ ipcMain.on("autosave", (event, data) => {
     if (err) {
       console.error("Error saving auto-save:", err);
     } else {
-      console.log("Auto-save updated");
       // Update the save file status after successful save
       win.webContents.send("save-file-status", { 
         exists: true, 

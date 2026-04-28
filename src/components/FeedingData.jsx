@@ -5,13 +5,13 @@ import PreyItem from './feeding/PreyItem';
 import PreySize from './feeding/PreySize';
 import Provider from './feeding/Provider';
 import Recipient from './feeding/Recipient';
+import FeedingSpecies from './feeding/FeedingSpecies';
 import Timer from './Timer';
 import Comment from './Comment';
 import { useState, useEffect, useMemo, useReducer, useCallback, useRef } from 'react';
 import { flushSync } from 'react-dom';
 import React from 'react';
 import { Button, Input, Checkbox, message, Modal } from 'antd';
-import { useAutoSave } from '../hooks/useAutoSave';
 import { ConfigProvider } from '../contexts/ConfigContext';
 import { StylesProvider } from '../contexts/StylesContext';
 import { FeedingProvider } from '../contexts/FeedingContext';
@@ -40,17 +40,13 @@ const feedingReducer = (state, action) => {
     switch (action.type) {
         case 'SET_PLOT':
             return { ...state, feeding: { ...state.feeding, Plot_Status: action.payload } };
+        case 'SET_FEEDING_SPECIES':
+            return { ...state, feeding: { ...state.feeding, Species: action.payload } };
         case 'SET_NEST':
             return { ...state, feeding: { ...state.feeding, Nest: action.payload } };
         case 'SET_PROVIDER':
             return { ...state, feeding: { ...state.feeding, Provider: action.payload } };
         case 'SET_NUMBER_ITEMS':
-            return { ...state, feeding: { ...state.feeding, Number_of_Items: action.payload } };
-        case 'SET_RECIPIENT':
-            return { ...state, feeding: { ...state.feeding, Number_of_Items: action.payload } };
-        case 'SET_PREY_SIZE':
-            return { ...state, feeding: { ...state.feeding, Number_of_Items: action.payload } };
-        case 'SET_PREY_ITEM':
             return { ...state, feeding: { ...state.feeding, Number_of_Items: action.payload } };
         case 'SET_TIME_ARRIVE':
             return { ...state, feeding: { ...state.feeding, Time_Arrive: action.payload, Time_Depart: "" } };
@@ -90,8 +86,6 @@ const feedingReducer = (state, action) => {
  * @returns {JSX.Element} The feeding data entry interface
  */
 function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onToggle, styles, config }) {
-    // Initialize debounced auto-save hook (1 second delay)
-    const debouncedAutoSave = useAutoSave(1000);
     styles = {
         ...styles,
         outerContainer: {
@@ -266,6 +260,10 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
      */
     const setPlot = useCallback((Plot) => {
         dispatchFeeding({ type: 'SET_PLOT', payload: Plot });
+    }, [dispatchFeeding]);
+
+    const setFeedingSpecies = useCallback((value) => {
+        dispatchFeeding({ type: 'SET_FEEDING_SPECIES', payload: value });
     }, [dispatchFeeding]);
 
     /**
@@ -571,7 +569,7 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
 
         // Collect empty fields into the array
         Object.entries(feedingTemp).forEach(([field, value]) => {
-            if (field === 'Comment') return;  // Skip "Comment"
+            if (field === 'Comment' || field === 'Species') return;
 
             if (Array.isArray(value)) {
                 value.forEach((item, i) => {
@@ -660,20 +658,20 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
         prevFeedingsLengthRef.current = currentLength;
     }, [feedings, index, handleOpenFeeding])
 
-    // Auto-save whenever feeding data changes (debounced)
+    // Sync edits into the feedings array; StintData's auto-save picks up the state change.
     useEffect(() => {
         const feedingsArray = Array.isArray(feedings) ? feedings : [];
         if (feedingTemp !== feeding && index >= 0 && index < feedingsArray.length) {
             handleSaveFeeding(index);
-            debouncedAutoSave(stint);
         }
-    }, [feeding, feedingTemp, handleSaveFeeding, index, stint, debouncedAutoSave, feedings])
+    }, [feeding, feedingTemp, handleSaveFeeding, index, feedings])
 
     // Memoized feeding actions for context (prevents unnecessary re-renders)
     // Note: handleSaveFeeding is NOT included here to avoid infinite loops
     // It depends on 'feeding' which changes frequently
     const feedingActions = useMemo(() => ({
         setPlot,
+        setFeedingSpecies,
         setNest,
         setProvider,
         setNumberItems,
@@ -688,6 +686,7 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
         handleOpenFeeding
     }), [
         setPlot,
+        setFeedingSpecies,
         setNest,
         setProvider,
         setNumberItems,
@@ -758,6 +757,18 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
                         <div style={styles.plotNoItemBtn}>
                             <Plot setPlot={setPlot} data={feeding.Plot_Status} />
                         </div>
+                        {(() => {
+                            const stintSpeciesArr = Array.isArray(stint.Species) ? stint.Species : (stint.Species ? [stint.Species] : []);
+                            return stintSpeciesArr.length > 1 ? (
+                                <div style={styles.plotNoItemBtn}>
+                                    <FeedingSpecies
+                                        data={feeding.Species || ""}
+                                        stintSpecies={stintSpeciesArr}
+                                        setFeedingSpecies={setFeedingSpecies}
+                                    />
+                                </div>
+                            ) : null;
+                        })()}
                     </div>
                     <div style={{ 
                         ...styles.upperMenuContainer, 

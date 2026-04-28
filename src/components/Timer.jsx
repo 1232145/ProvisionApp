@@ -1,75 +1,113 @@
-import React, { useState } from 'react';
-import { Button, DatePicker, Input, Row, Col } from 'antd';
+import React from 'react';
+import { Button, Input, Row, Col, DatePicker } from 'antd';
+import dayjs from 'dayjs';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
 import moment from 'moment';
 
+dayjs.extend(customParseFormat);
+
+const DATE_DISPLAY = 'MM/DD/YYYY';
+
 function Timer({
-    setTime, // Parent function to update the time
-    data, // Value from parent to initialize
-    label, // Label to display
-    description, // Description for the button
-    styles, // Styles for the component
-    hasDatePicker = true, // Whether to show the DatePicker
-    hasInput = true, // Whether to show the Input
-    hasButton = true, // Whether to show the "Now" button
-    format = 'MM/DD/YYYY HH:mm', // Default date format
+    setTime,
+    data,
+    label,
+    description,
+    styles,
+    hasDatePicker = false, // split mode: date picker + HH:mm input
+    hasInput = true,        // plain text input (used when hasDatePicker=false)
+    hasButton = true,
+    format = 'MM/DD/YYYY HH:mm',
+    minDate = null,         // moment object — clamps the Now button & disables past dates
 }) {
-    const [selectedDate, setSelectedDate] = useState(data ? moment(data, format) : null);
+    // Derive date and time parts directly from the data prop (no local state needed —
+    // the parent owns the value, so the picker always reflects the latest external change).
+    const datePart = (hasDatePicker && data) ? (data.split(' ')[0] || '') : '';
+    const timePart = (hasDatePicker && data) ? (data.split(' ')[1] || '') : '';
 
-    // Handle DatePicker changes
-    const handleDateChange = (value) => {
-        setSelectedDate(value); // Update local state when DatePicker changes
-        const formattedDate = value ? value.format(format) : ''; // Format the date
-        setTime(formattedDate); // Propagate the formatted date to the parent
+    // Parse the date part with Day.js strict mode so a missing/partial date → null
+    const datePickerValue = (() => {
+        if (!datePart) return null;
+        const d = dayjs(datePart, DATE_DISPLAY, true);
+        return d.isValid() ? d : null;
+    })();
+
+    const handleDatePickerChange = (dayjsVal) => {
+        const date = dayjsVal ? dayjsVal.format(DATE_DISPLAY) : '';
+        // Keep whatever the user has already typed in the time field (default 00:00)
+        const time = timePart || '00:00';
+        setTime(date ? `${date} ${time}` : '');
     };
 
-    // Handle time input change
-    const handleTimeInputChange = (e) => {
-        const input = e.target.value;
-        setTime(input); // Propagate the input value to the parent
+    const handleTimePartChange = (e) => {
+        const time = e.target.value;
+        // Only set the combined value if a date has been chosen
+        setTime(datePart ? `${datePart} ${time}` : time);
     };
 
-    // Handle button click (sets current date and time)
+    const handleFullInputChange = (e) => {
+        setTime(e.target.value);
+    };
+
     const handleButtonClick = () => {
-        const time = moment().format(format);
-        setTime(time); // Set the current time to the parent
-
-        // If we need a warning pop-up for incorrect format:
-        // notification.warning({
-        //     message: 'Invalid Date Format',
-        //     description: `Please enter the date in ${format} format.`,
-        //     duration: 2,
-        // });
+        const now = moment();
+        const clamped = minDate && now.isBefore(minDate) ? minDate.clone() : now;
+        setTime(clamped.format(format));
     };
+
+    // Convert moment minDate → dayjs for the picker's disabledDate (no mutation issues)
+    const minDayjs = minDate ? dayjs(minDate.format('YYYY-MM-DD')) : null;
+    const disabledDate = minDayjs
+        ? (current) => current && current.isBefore(minDayjs, 'day')
+        : undefined;
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', marginTop: '10px' }}>
             <p style={styles.labelContainer}>
-                <span style={styles.label}>{label}:</span> {data === null || data === undefined ? format : data}
+                <span style={styles.label}>{label}:</span>{' '}
+                {data || <span style={{ color: '#aaa', fontStyle: 'italic' }}>{format}</span>}
             </p>
-            <Row gutter={16} style={{ marginBottom: '10px' }}>
-                {hasDatePicker && (
-                    <Col span={hasInput ? 12 : 24}>
+
+            {hasDatePicker ? (
+                <Row gutter={8} style={{ marginBottom: '10px' }}>
+                    <Col span={15}>
+                        {/* inputReadOnly prevents typing in the picker's own field,
+                            which was causing garbage dates. Users click to pick the date. */}
                         <DatePicker
-                            value={selectedDate} // Bind the selected date to the DatePicker
-                            onChange={handleDateChange} // Handle change from DatePicker
-                            format={format} // Use the desired format
-                            showTime // Display the time picker
+                            value={datePickerValue}
+                            onChange={handleDatePickerChange}
+                            format={DATE_DISPLAY}
                             style={{ width: '100%' }}
-                            placeholder={`${format}`} // Add placeholder with format info
+                            placeholder="MM/DD/YYYY"
+                            disabledDate={disabledDate}
+                            inputReadOnly
                         />
                     </Col>
-                )}
-                {hasInput && (
-                    <Col span={hasDatePicker ? 12 : 24}>
+                    <Col span={9}>
                         <Input
-                            value={data} // Bind to the parent data
-                            onChange={handleTimeInputChange} // Update parent state
-                            placeholder={`${format}`} // Add placeholder with format info
+                            value={timePart}
+                            onChange={handleTimePartChange}
+                            placeholder="HH:mm"
+                            maxLength={5}
                             style={{ width: '100%' }}
                         />
                     </Col>
-                )}
-            </Row>
+                </Row>
+            ) : (
+                hasInput && (
+                    <Row style={{ marginBottom: '10px' }}>
+                        <Col span={24}>
+                            <Input
+                                value={data}
+                                onChange={handleFullInputChange}
+                                placeholder={format}
+                                style={{ width: '100%' }}
+                            />
+                        </Col>
+                    </Row>
+                )
+            )}
+
             {hasButton && (
                 <Button onClick={handleButtonClick} style={{ width: '100%' }}>
                     {description}

@@ -1,43 +1,23 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Select } from 'antd';
 
 const { Option } = Select;
 
-/**
- * Island component for selecting or entering island name
- * Shows dropdown if config data is available, otherwise shows text input
- * @param {object} props - Component props
- * @param {Function} props.setIsland - Callback function to update island value
- * @param {string} props.data - Current island value
- * @param {object} props.styles - Style object for component styling
- * @param {object|null} props.config - Config object containing Island array, or null if no config loaded
- */
 function Island({ setIsland, data, styles, config }) {
-  /**
-   * Handles selection change from dropdown
-   * @param {string} value - Selected island value
-   */
   const handleSelectChange = (value) => {
-    setIsland(value);
+    setIsland(value ?? '');
   };
 
-  /**
-   * Handles input change from text field
-   * @param {Event} e - Input change event
-   */
   const handleInputChange = (e) => {
     setIsland(e.currentTarget.value);
   };
 
-  // Synchronize the select value based on input
-  useEffect(() => {
-    if (data && config && config.Island && !config.Island.includes(data)) {
-      // Safeguard: If input is not in the config, do nothing
-    }
-  }, [data, config]);
-
-  // Check if config has Island data
   const hasConfigData = config && config.Island && config.Island.length > 0;
+
+  // Ensure loaded value always appears in the list even if not in config
+  const options = hasConfigData
+    ? (data && !config.Island.includes(data) ? [data, ...config.Island] : config.Island)
+    : [];
 
   return (
     <div style={styles.inputContainer}>
@@ -55,12 +35,10 @@ function Island({ setIsland, data, styles, config }) {
           filterOption={(input, option) =>
             option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
           }
-          value={config.Island.includes(data) ? data : undefined} // Set value based on input
+          value={data || undefined}
         >
-          {config.Island.map((island, index) => (
-            <Option key={index} value={island}>
-              {island}
-            </Option>
+          {options.map((island, index) => (
+            <Option key={index} value={island}>{island}</Option>
           ))}
         </Select>
       ) : (
@@ -68,10 +46,7 @@ function Island({ setIsland, data, styles, config }) {
           onChange={handleInputChange}
           value={data}
           placeholder="Island"
-          style={{
-            ...styles.inputField,
-            width: '100%'
-          }}
+          style={{ ...styles.inputField, width: '100%' }}
         />
       )}
     </div>
