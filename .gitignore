@@ -26,7 +26,6 @@ yarn-error.log*
 /dist
 *.zip
 
-# Capacitor
-ios/
+# Capacitor (ios/ is committed for Xcode Cloud; see ios/.gitignore)
 android/
 .capacitor/
