@@ -1,5 +1,5 @@
 import React from 'react'
-import { Button, Space, Row, Col, Modal, message } from 'antd';
+import { Button, Modal, message } from 'antd';
 
 function NumberItems({ data, changeIndex, nIndex, setNumberItems, styles }) {
     styles = {
