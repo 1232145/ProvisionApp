@@ -9,12 +9,13 @@ import platformFS from '../utils/platform';
  */
 export const useAutoSave = (delay = 1000) => {
   const autoSave = useCallback((data) => {
-    // Only save if there's meaningful data
-    if (data && (data.Island || data.Species || data.First_Name || data.Last_Name || data.Date_Time_Start)) {
-      platformFS.saveAutoSave(data).catch(error => {
-        console.error('Error in auto-save:', error);
-      });
-    }
+    if (!data) return;
+    console.log('[AutoSave] Triggered —', new Date().toLocaleTimeString(), '| Island:', data.Island, '| Species:', data.Species, '| Name:', data.First_Name, data.Last_Name);
+    platformFS.saveAutoSave(data).then(() => {
+      console.log('[AutoSave] IPC sent successfully');
+    }).catch(error => {
+      console.error('[AutoSave] Error sending IPC:', error);
+    });
   }, []);
 
   return useDebounce(autoSave, delay);

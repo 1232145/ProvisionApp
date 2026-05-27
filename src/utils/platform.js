@@ -7,10 +7,11 @@
 // Detect platform
 const isElectron = () => {
   try {
-    return typeof window !== 'undefined' && 
-           window.process && 
-           window.process.type === 'renderer' &&
-           typeof window.require === 'function';
+    // window.process.type is unreliable in CRA webpack builds (process polyfill lacks .type).
+    // Directly check if ipcRenderer is accessible — the definitive Electron renderer test.
+    if (typeof window === 'undefined' || typeof window.require !== 'function') return false;
+    const electron = window.require('electron');
+    return !!(electron && electron.ipcRenderer);
   } catch (e) {
     return false;
   }
@@ -44,15 +45,14 @@ class PlatformFileSystem {
     this.app = null;
     this.filesystemPromise = null;
     this.appPromise = null;
-    
+    console.log('[Platform] Detected platform:', this.platform);
+
     if (this.platform === 'electron') {
       try {
-        // Safely check for window.require before using it
-        if (typeof window !== 'undefined' && typeof window.require === 'function') {
-          this.ipcRenderer = window.require('electron').ipcRenderer;
-        }
+        this.ipcRenderer = window.require('electron').ipcRenderer;
+        console.log('[Platform] ipcRenderer initialized:', !!this.ipcRenderer);
       } catch (e) {
-        console.warn('Electron IPC not available:', e);
+        console.warn('[Platform] Could not get ipcRenderer:', e);
       }
     } else if (this.platform === 'capacitor') {
       // Pre-load Capacitor plugins
@@ -93,7 +93,12 @@ class PlatformFileSystem {
    * Save data to auto-save file
    */
   async saveAutoSave(data) {
-    if (this.platform === 'electron' && this.ipcRenderer) {
+    if (this.platform === 'electron') {
+      if (!this.ipcRenderer) {
+        console.error('[Platform] ERROR: ipcRenderer is null — file will NOT be saved!');
+        return Promise.reject(new Error('ipcRenderer not available'));
+      }
+      console.log('[Platform] Sending autosave IPC → main process');
       this.ipcRenderer.send('autosave', data);
       return Promise.resolve();
     } else if (this.platform === 'capacitor') {

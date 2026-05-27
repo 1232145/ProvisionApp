@@ -4,6 +4,11 @@ const fs = require("fs");
 
 let win;
 let autoSaveFilePath;
+let backupSaveFilePath;
+
+function hasMeaningfulData(data) {
+  return !!(data && (data.Island || data.First_Name || data.Last_Name || data.Date_Time_Start));
+}
 
 function createWindow() {
   win = new BrowserWindow({
@@ -23,9 +28,12 @@ function createWindow() {
     : path.join(__dirname, "../build");
   win.loadFile(path.join(dir, "index.html"));
   
-  // Use userData so writes succeed in packaged builds (app.asar is read-only)
-  autoSaveFilePath = path.join(app.getPath('userData'), "auto-save.json");
-  console.log(`Auto-save will be stored at: ${autoSaveFilePath}`);
+  // Send the chosen autosave folder to the renderer once the page loads
+  win.webContents.once('did-finish-load', () => {
+    win.webContents.send('autosave-folder-ready', {
+      folder: path.dirname(autoSaveFilePath)
+    });
+  });
 
   // win.webContents.openDevTools();
 
@@ -46,40 +54,34 @@ function createWindow() {
 }
 
 // Check if auto-save exists and send it to the renderer (React)
+// Reads from the backup file so a cleared/empty live autosave never clobbers a good restore.
 ipcMain.on("check-auto-save", () => {
-  fs.readFile(autoSaveFilePath, "utf-8", (err, data) => {
+  fs.readFile(backupSaveFilePath, "utf-8", (err, data) => {
     if (err) {
-      console.error("No auto-save file found or error reading the file:", err);
-      // Send null if no auto-save exists
+      console.log("[Main] No backup save found:", err.code);
       win.webContents.send("load-auto-save", null);
       return;
     }
-
     try {
-      // Try to parse JSON content
       const parsedData = JSON.parse(data);
-      // Send the saved data to the React app
+      console.log("[Main] Loaded backup save successfully");
       win.webContents.send("load-auto-save", parsedData);
     } catch (parseError) {
-      // Handle JSON parse error (file is not valid JSON)
-      console.error("Error parsing auto-save file:", parseError);
-      // Send null if JSON is invalid
+      console.error("[Main] Error parsing backup save:", parseError);
       win.webContents.send("load-auto-save", null);
     }
   });
 });
 
-// Check if save file exists and get its timestamp
+// Check if save file exists — reports on the backup file since that's what Load Save reads
 ipcMain.on("check-save-file-exists", () => {
-  fs.stat(autoSaveFilePath, (err, stats) => {
+  fs.stat(backupSaveFilePath, (err, stats) => {
     if (err) {
-      // File doesn't exist
       win.webContents.send("save-file-status", { exists: false, lastModified: null });
     } else {
-      // File exists, send its modification time
-      win.webContents.send("save-file-status", { 
-        exists: true, 
-        lastModified: stats.mtime.toISOString() 
+      win.webContents.send("save-file-status", {
+        exists: true,
+        lastModified: stats.mtime.toISOString()
       });
     }
   });
@@ -113,25 +115,60 @@ ipcMain.on("save-file", async (event, { content, fileName }) => {
   }
 });
 
+function atomicWrite(filePath, content, onSuccess) {
+  const tmp = filePath + ".tmp";
+  fs.writeFile(tmp, content, (writeErr) => {
+    if (writeErr) { console.error(`[Main] Write error (${filePath}):`, writeErr); return; }
+    fs.rename(tmp, filePath, (renameErr) => {
+      if (renameErr) { console.error(`[Main] Rename error (${filePath}):`, renameErr); return; }
+      if (onSuccess) onSuccess();
+    });
+  });
+}
+
 // Listen for saving data and save to auto-save file
 ipcMain.on("autosave", (event, data) => {
-  // Ensure data is an object before saving, or initialize it as an empty object
   const saveData = data || {};
+  const ts = new Date().toISOString();
+  const json = JSON.stringify(saveData, null, 2);
 
-  fs.writeFile(autoSaveFilePath, JSON.stringify(saveData, null, 2), (err) => {
-    if (err) {
-      console.error("Error saving auto-save:", err);
-    } else {
-      // Update the save file status after successful save
-      win.webContents.send("save-file-status", { 
-        exists: true, 
-        lastModified: new Date().toISOString() 
-      });
-    }
+  // Always write the live autosave (even if empty — reflects true current state)
+  atomicWrite(autoSaveFilePath, json, () => {
+    console.log(`[Main] Autosave written ✓ (${ts})`);
+    win.webContents.send("save-file-status", { exists: true, lastModified: ts });
   });
+
+  // Only update backup when data has meaningful content — protects against
+  // empty-state overwrites (cleared form, fresh mount, etc.)
+  if (hasMeaningfulData(saveData)) {
+    atomicWrite(backupSaveFilePath, json, () => {
+      console.log(`[Main] Backup updated ✓ (${ts})`);
+    });
+  } else {
+    console.log(`[Main] Backup skipped — no meaningful data`);
+  }
 });
 
-app.whenReady().then(createWindow);
+async function selectFolderAndCreateWindow() {
+  const defaultPath = app.getPath('userData');
+  const { canceled, filePaths } = await dialog.showOpenDialog({
+    title: 'Select Auto-save Folder',
+    message: 'Choose a folder where your session data will be automatically saved',
+    defaultPath: defaultPath,
+    properties: ['openDirectory', 'createDirectory'],
+    buttonLabel: 'Select Folder'
+  });
+
+  const folder = (!canceled && filePaths.length > 0) ? filePaths[0] : defaultPath;
+  autoSaveFilePath  = path.join(folder, 'auto-save.json');
+  backupSaveFilePath = path.join(folder, 'auto-save-backup.json');
+
+  console.log(`Auto-save will be stored at: ${autoSaveFilePath}`);
+  console.log(`Backup save will be stored at: ${backupSaveFilePath}`);
+  createWindow();
+}
+
+app.whenReady().then(selectFolderAndCreateWindow);
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
@@ -141,6 +178,6 @@ app.on("window-all-closed", () => {
 
 app.on("activate", () => {
   if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
+    selectFolderAndCreateWindow();
   }
 });

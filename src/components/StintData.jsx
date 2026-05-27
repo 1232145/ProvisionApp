@@ -184,9 +184,12 @@ function StintData() {
   // Auto-save file status
   const [saveFileExists, setSaveFileExists] = useState(false);
   const [lastSaveTime, setLastSaveTime] = useState(null);
+  const [autosaveFolder, setAutosaveFolder] = useState(null);
 
   // Track unsaved changes — ref avoids stale closures inside the close handler
   const isDirtyRef = useRef(false);
+  // Skip the very first render so initial empty state doesn't overwrite the autosave file
+  const isFirstRender = useRef(true);
 
   /**
    * Sets the island value in the stint data state
@@ -243,10 +246,11 @@ function StintData() {
 
   const setTimeDepart = useCallback((time) => {
     if (time && startTimeRef.current) {
-      const start = moment(startTimeRef.current, 'MM/DD/YYYY HH:mm');
-      const end = moment(time, 'MM/DD/YYYY HH:mm');
+      const start = moment(startTimeRef.current, 'MM/DD/YYYY HH:mm', true);
+      const end = moment(time, 'MM/DD/YYYY HH:mm', true);
       if (start.isValid() && end.isValid() && end.isBefore(start)) {
-        message.error("End time cannot be before start time.");
+        message.error("End time can not be before start time.");
+        setStint(prev => ({ ...prev, Date_Time_End: startTimeRef.current }));
         return;
       }
     }
@@ -857,7 +861,12 @@ function StintData() {
   const debouncedAutoSave = useAutoSave(1000);
 
   // Auto-save and mark dirty whenever stint data changes
+  // Skip the very first render — default empty state must not overwrite a saved file
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
     isDirtyRef.current = true;
     debouncedAutoSave(stint);
   }, [stint, debouncedAutoSave]);
@@ -865,23 +874,28 @@ function StintData() {
   // Component initialization - check if save file exists
   useEffect(() => {
     checkSaveFileExists();
-    
-    // For Electron, listen for save file status updates
+
+    // For Electron, listen for save file status and autosave folder updates
     if (platformFS.getPlatform() === 'electron') {
       try {
-        const handleSaveFileStatus = (event, { exists, lastModified }) => {
-          // Only update state if values actually changed to prevent unnecessary re-renders
-          setSaveFileExists(prevExists => prevExists !== exists ? exists : prevExists);
-          setLastSaveTime(prevTime => prevTime !== lastModified ? lastModified : prevTime);
-        };
-
-        // Safely check for window.require before using it
         if (typeof window !== 'undefined' && typeof window.require === 'function') {
           const ipcRenderer = window.require('electron').ipcRenderer;
+
+          const handleSaveFileStatus = (event, { exists, lastModified }) => {
+            setSaveFileExists(prevExists => prevExists !== exists ? exists : prevExists);
+            setLastSaveTime(prevTime => prevTime !== lastModified ? lastModified : prevTime);
+          };
+
+          const handleFolderReady = (event, { folder }) => {
+            setAutosaveFolder(folder);
+          };
+
           ipcRenderer.on("save-file-status", handleSaveFileStatus);
+          ipcRenderer.on("autosave-folder-ready", handleFolderReady);
 
           return () => {
             ipcRenderer.removeListener("save-file-status", handleSaveFileStatus);
+            ipcRenderer.removeListener("autosave-folder-ready", handleFolderReady);
           };
         }
       } catch (error) {
@@ -1058,13 +1072,23 @@ function StintData() {
 
             <div style={{ maxWidth: "100%", overflowX: "auto" }}>
               <DataTable stint={stint} />
+              {autosaveFolder && (
+                <div style={{
+                  textAlign: "center",
+                  fontSize: "12px",
+                  color: "#888",
+                  marginTop: "6px"
+                }}>
+                  Auto-save folder: {autosaveFolder}
+                </div>
+              )}
               {lastSaveTime && saveFileExists && (
-                <div style={{ 
-                  textAlign: "center", 
-                  fontSize: "12px", 
+                <div style={{
+                  textAlign: "center",
+                  fontSize: "12px",
                   color: "#666",
                   fontStyle: "italic",
-                  marginTop: "8px"
+                  marginTop: "4px"
                 }}>
                   Last saved: {new Date(lastSaveTime).toLocaleString()}
                 </div>
