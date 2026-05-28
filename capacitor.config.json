@@ -1,5 +1,5 @@
 {
-  "appId": "com.esp.provision.natasha",
+  "appId": "com.esp.provision",
   "appName": "provision",
   "webDir": "build",
   "bundledWebRuntime": false,
