@@ -94,8 +94,18 @@ class PlatformFileSystem {
    */
   async saveAutoSave(data) {
     if (this.platform === 'electron' && this.ipcRenderer) {
-      this.ipcRenderer.send('autosave', data);
-      return Promise.resolve();
+      try {
+        console.log('[autosave] Electron invoke start');
+        const result = await this.ipcRenderer.invoke('autosave', data);
+        if (!result || result.success !== true) {
+          throw new Error((result && result.error) || 'Failed to auto-save in Electron');
+        }
+        console.log('[autosave] Electron invoke success', result.lastModified || '');
+        return Promise.resolve(result);
+      } catch (error) {
+        console.error('[autosave] Electron invoke failed', error);
+        return Promise.reject(error);
+      }
     } else if (this.platform === 'capacitor') {
       await this.ensureCapacitorPlugins();
       if (this.filesystem && this.directory) {
@@ -162,9 +172,11 @@ class PlatformFileSystem {
       return new Promise((resolve) => {
         const handler = (event, data) => {
           this.ipcRenderer.removeListener('load-auto-save', handler);
+          console.log('[autosave] Electron load response', data ? 'data-found' : 'no-data');
           resolve(data);
         };
         this.ipcRenderer.on('load-auto-save', handler);
+        console.log('[autosave] Electron check-auto-save request');
         this.ipcRenderer.send('check-auto-save');
       });
     } else if (this.platform === 'capacitor') {

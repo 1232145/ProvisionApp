@@ -5,6 +5,12 @@ const fs = require("fs");
 let win;
 let autoSaveFilePath;
 
+function sendToRenderer(channel, payload) {
+  if (!win || win.isDestroyed()) return;
+  if (!win.webContents || win.webContents.isDestroyed()) return;
+  win.webContents.send(channel, payload);
+}
+
 function createWindow() {
   win = new BrowserWindow({
     width: 800,
@@ -34,8 +40,12 @@ function createWindow() {
   win.on("close", (e) => {
     if (!isClosing) {
       e.preventDefault(); // Prevent the window from closing immediately
-      win.webContents.send("warn-close"); // Send a warning to the renderer
+      sendToRenderer("warn-close"); // Send a warning to the renderer
     }
+  });
+
+  win.on("closed", () => {
+    win = null;
   });
 
   // Listen for confirmation from the renderer to close the window
@@ -47,11 +57,12 @@ function createWindow() {
 
 // Check if auto-save exists and send it to the renderer (React)
 ipcMain.on("check-auto-save", () => {
+  console.log("[autosave] check-auto-save requested", autoSaveFilePath);
   fs.readFile(autoSaveFilePath, "utf-8", (err, data) => {
     if (err) {
       console.error("No auto-save file found or error reading the file:", err);
       // Send null if no auto-save exists
-      win.webContents.send("load-auto-save", null);
+      sendToRenderer("load-auto-save", null);
       return;
     }
 
@@ -59,12 +70,12 @@ ipcMain.on("check-auto-save", () => {
       // Try to parse JSON content
       const parsedData = JSON.parse(data);
       // Send the saved data to the React app
-      win.webContents.send("load-auto-save", parsedData);
+      sendToRenderer("load-auto-save", parsedData);
     } catch (parseError) {
       // Handle JSON parse error (file is not valid JSON)
       console.error("Error parsing auto-save file:", parseError);
       // Send null if JSON is invalid
-      win.webContents.send("load-auto-save", null);
+      sendToRenderer("load-auto-save", null);
     }
   });
 });
@@ -74,10 +85,10 @@ ipcMain.on("check-save-file-exists", () => {
   fs.stat(autoSaveFilePath, (err, stats) => {
     if (err) {
       // File doesn't exist
-      win.webContents.send("save-file-status", { exists: false, lastModified: null });
+      sendToRenderer("save-file-status", { exists: false, lastModified: null });
     } else {
       // File exists, send its modification time
-      win.webContents.send("save-file-status", { 
+      sendToRenderer("save-file-status", { 
         exists: true, 
         lastModified: stats.mtime.toISOString() 
       });
@@ -94,41 +105,49 @@ ipcMain.on("save-file", async (event, { content, fileName }) => {
     });
 
     if (canceled || !filePath) {
-      win.webContents.send("save-file-result", false);
+      sendToRenderer("save-file-result", false);
       return;
     }
 
     fs.writeFile(filePath, content, "utf-8", (err) => {
       if (err) {
         console.error("Error saving file:", err);
-        win.webContents.send("save-file-result", false);
+        sendToRenderer("save-file-result", false);
       } else {
         console.log("File saved:", filePath);
-        win.webContents.send("save-file-result", true);
+        sendToRenderer("save-file-result", true);
       }
     });
   } catch (error) {
     console.error("Error in save-file handler:", error);
-    win.webContents.send("save-file-result", false);
+    sendToRenderer("save-file-result", false);
   }
 });
 
-// Listen for saving data and save to auto-save file
-ipcMain.on("autosave", (event, data) => {
-  // Ensure data is an object before saving, or initialize it as an empty object
+// Save auto-save data and wait for real disk-write completion
+ipcMain.handle("autosave", async (event, data) => {
   const saveData = data || {};
 
-  fs.writeFile(autoSaveFilePath, JSON.stringify(saveData, null, 2), (err) => {
-    if (err) {
-      console.error("Error saving auto-save:", err);
-    } else {
-      // Update the save file status after successful save
-      win.webContents.send("save-file-status", { 
-        exists: true, 
-        lastModified: new Date().toISOString() 
-      });
-    }
-  });
+  try {
+    console.log("[autosave] write start", autoSaveFilePath);
+    await fs.promises.writeFile(
+      autoSaveFilePath,
+      JSON.stringify(saveData, null, 2),
+      "utf-8"
+    );
+
+    const lastModified = new Date().toISOString();
+    console.log("[autosave] write success", lastModified);
+    sendToRenderer("save-file-status", {
+      exists: true,
+      lastModified,
+    });
+
+    return { success: true, lastModified };
+  } catch (err) {
+    console.error("Error saving auto-save:", err);
+    return { success: false, error: err.message || "Unknown autosave error" };
+  }
 });
 
 app.whenReady().then(createWindow);

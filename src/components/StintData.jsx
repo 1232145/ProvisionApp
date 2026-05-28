@@ -166,6 +166,42 @@ function StintData() {
 
   const [config, setConfig] = useState(null);
 
+  const hasMeaningfulStintData = useCallback((value) => {
+    if (!value || typeof value !== "object") return false;
+
+    const hasCoreFields = Boolean(
+      value.Island ||
+      value.First_Name ||
+      value.Last_Name ||
+      value.Observer_Location ||
+      value.Date_Time_Start ||
+      value.Date_Time_End ||
+      value.Comment ||
+      (Array.isArray(value.Species) && value.Species.length > 0)
+    );
+
+    const feedings = Array.isArray(value.feedingData) ? value.feedingData : [];
+    const hasMeaningfulFeeding = feedings.some((feeding) => {
+      if (!feeding || typeof feeding !== "object") return false;
+      const hasFeedingFields = Boolean(
+        feeding.Nest ||
+        feeding.Time_Arrive ||
+        feeding.Time_Depart ||
+        feeding.Provider ||
+        feeding.Comment ||
+        feeding.Species ||
+        (feeding.Plot_Status && feeding.Plot_Status !== "Outside Plot")
+      );
+      const items = Array.isArray(feeding.Number_of_Items) ? feeding.Number_of_Items : [];
+      const hasItemFields = items.some((item) =>
+        item && (item.Recipient || item.Prey_Item || item.Prey_Size)
+      );
+      return hasFeedingFields || hasItemFields;
+    });
+
+    return hasCoreFields || hasMeaningfulFeeding;
+  }, []);
+
   // Memoize config processing to prevent expensive re-parsing
   const processedConfig = useMemo(() => {
     if (!config) return null;
@@ -187,6 +223,8 @@ function StintData() {
 
   // Track unsaved changes — ref avoids stale closures inside the close handler
   const isDirtyRef = useRef(false);
+  const latestStintRef = useRef(stint);
+  const hasInitializedAutoSaveRef = useRef(false);
 
   /**
    * Sets the island value in the stint data state
@@ -467,7 +505,7 @@ function StintData() {
     const rows = rowsRaw.filter((r) => r.some((v) => (v ?? '').trim() !== ''));
     if (rows.length < 2) {
       console.error("Invalid CSV: Not enough data.");
-      return stint;
+      return null;
     }
 
     // Define the required headers in order
@@ -514,7 +552,7 @@ function StintData() {
       message.error(
         `Invalid CSV: Missing headers -> ${missingHeaders.join(", ")}`
       );
-      return stint;
+      return null;
     }
     const headerIndex = headers.reduce((acc, key, idx) => {
       acc[key] = idx;
@@ -773,13 +811,24 @@ function StintData() {
           const csv = e.target.result;
 
           if (type === "stint") {
-            const stint = csvToJson(csv);
+            const parsedStint = csvToJson(csv);
+            if (!parsedStint) return;
             // Ensure feedingData is always an array
             const safeStint = {
-              ...stint,
-              feedingData: Array.isArray(stint.feedingData) ? stint.feedingData : [initialFeeding]
+              ...parsedStint,
+              feedingData: Array.isArray(parsedStint.feedingData) ? parsedStint.feedingData : [initialFeeding]
             };
             setStint(safeStint);
+            latestStintRef.current = safeStint;
+            isDirtyRef.current = true;
+            // Persist imported data immediately so "import -> exit" is safe
+            if (hasMeaningfulStintData(safeStint)) {
+              platformFS.saveAutoSave(safeStint).catch((error) => {
+                console.error('Error auto-saving imported stint:', error);
+              });
+            } else {
+              message.warning("Imported file contained no usable stint data; auto-save not updated.");
+            }
           } else if (type === "config") {
             const config = configToJson(csv);
             setConfig(config);
@@ -811,7 +860,7 @@ function StintData() {
     try {
       console.log('Loading auto-save...');
       const data = await platformFS.loadAutoSave();
-      if (data) {
+      if (data && hasMeaningfulStintData(data)) {
         // Ensure feedingData is always an array
         const safeData = {
           ...data,
@@ -827,7 +876,7 @@ function StintData() {
       } else {
         notification.info({
           message: "No Auto-Save Data",
-          description: "No auto-save data found.",
+          description: "No usable auto-save data found.",
           placement: "topRight",
           duration: 1.5,
         });
@@ -858,6 +907,14 @@ function StintData() {
 
   // Auto-save and mark dirty whenever stint data changes
   useEffect(() => {
+    latestStintRef.current = stint;
+
+    // Skip initial mount so we don't overwrite an existing auto-save with blank defaults.
+    if (!hasInitializedAutoSaveRef.current) {
+      hasInitializedAutoSaveRef.current = true;
+      return;
+    }
+
     isDirtyRef.current = true;
     debouncedAutoSave(stint);
   }, [stint, debouncedAutoSave]);
@@ -905,7 +962,7 @@ function StintData() {
   };
 
   useEffect(() => {
-    const handleClose = () => {
+    const handleClose = async () => {
       if (platformFS.getPlatform() === 'capacitor') {
         // iOS: auto-save handles this
       } else {
@@ -918,6 +975,13 @@ function StintData() {
           "You have unsaved changes. Are you sure you want to exit?"
         );
         if (shouldClose) {
+          try {
+            if (hasMeaningfulStintData(latestStintRef.current)) {
+              await platformFS.saveAutoSave(latestStintRef.current);
+            }
+          } catch (error) {
+            console.error('Error performing final auto-save before exit:', error);
+          }
           platformFS.confirmClose();
         }
       }
@@ -925,7 +989,7 @@ function StintData() {
 
     const cleanup = platformFS.onCloseWarning(handleClose);
     return cleanup;
-  }, []);
+  }, [hasMeaningfulStintData]);
 
   return (
     <div>
