@@ -31,9 +31,10 @@ function PreySize({ data }) {
           <Button key={index} value={item} handleData={setPreySize} selected={data === item} />
         ))}
         <Button handleData={setPreySize} value="" />
-        <Button handleData={setPreySize} value="drop-down" selected={data} dropdownValues={dropdownValues} />
+        <Button handleData={setPreySize} value="drop-down" selected={data} dropdownValues={dropdownValues} ariaLabel="Additional prey size options" />
         <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
           <Input
+            aria-label="Custom prey size"
             placeholder="Write in..."
             value={customValue}
             onChange={(e) => setCustomValue(e.target.value)}

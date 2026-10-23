@@ -15,6 +15,12 @@ import { Button, Input, Checkbox, message, Modal } from 'antd';
 import { ConfigProvider } from '../contexts/ConfigContext';
 import { StylesProvider } from '../contexts/StylesContext';
 import { FeedingProvider } from '../contexts/FeedingContext';
+import {
+    createEmptyFeeding,
+    FEEDING_TIME_FORMAT,
+    normalizeFeeding,
+} from '../domain/models';
+import { feedingReducer } from '../domain/feedingReducer';
 
 // Default arrays for feeding components (moved outside to avoid re-creation)
 const defaultProviders = ["BA", "BL", "BR", "FR", "S", "U", "UA", "UB", "UC", "X", "AA", "AB", "BMB", "KF", "KM", "SMB", "TA"];
@@ -26,49 +32,6 @@ const defaultPreyItems = ["H", "U", "R", "S", "UF", "A", "HD", "T", "H or R", "E
   "SM", "SN", "SP", "SS", "SY", "T", "TC", "U", "UF1", "UF1-SI2016", "UFEER2016", 
   "UF-PI2017", "UFSI2015", "UG", "LA/UF", "UI", "V", "W", "X", "Y", "Z"];
 const defaultNests = ["P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9", "P10"];
-
-/**
- * Feeding state reducer for managing feeding data state
- * Handles all state updates for feeding data using reducer pattern
- * @param {object} state - Current feeding state object containing feeding, feedingTemp, index, nIndex
- * @param {object} action - Action object with type and payload
- * @param {string} action.type - Action type (e.g., 'SET_PLOT', 'SET_NEST', 'SET_NUMBER_ITEMS')
- * @param {*} action.payload - Action payload data
- * @returns {object} New state object
- */
-const feedingReducer = (state, action) => {
-    switch (action.type) {
-        case 'SET_PLOT':
-            return { ...state, feeding: { ...state.feeding, Plot_Status: action.payload } };
-        case 'SET_FEEDING_SPECIES':
-            return { ...state, feeding: { ...state.feeding, Species: action.payload } };
-        case 'SET_NEST':
-            return { ...state, feeding: { ...state.feeding, Nest: action.payload } };
-        case 'SET_PROVIDER':
-            return { ...state, feeding: { ...state.feeding, Provider: action.payload } };
-        case 'SET_NUMBER_ITEMS':
-            return { ...state, feeding: { ...state.feeding, Number_of_Items: action.payload } };
-        case 'SET_TIME_ARRIVE':
-            return { ...state, feeding: { ...state.feeding, Time_Arrive: action.payload, Time_Depart: "" } };
-        case 'SET_TIME_DEPART':
-            return { ...state, feeding: { ...state.feeding, Time_Depart: action.payload } };
-        case 'SET_COMMENT':
-            return { ...state, feeding: { ...state.feeding, Comment: action.payload } };
-        case 'SET_FEEDING':
-            return { ...state, feeding: action.payload, feedingTemp: state.feeding };
-        case 'SET_INDEX':
-            return { ...state, index: action.payload };
-        case 'SET_NINDEX':
-            return { ...state, nIndex: action.payload };
-        case 'SET_FEEDING_TEMP':
-            return { ...state, feedingTemp: action.payload };
-        case 'BATCH_UPDATE':
-            // For multiple updates in one action
-            return { ...state, ...action.payload };
-        default:
-            return state;
-    }
-};
 
 /**
  * FeedingData component - Main component for managing feeding data entries
@@ -233,16 +196,12 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
     const { feeding, feedingTemp, index, nIndex } = feedingState;
 
     // Use refs to access latest values without causing re-renders
-    const feedingRef = useRef(feeding);
-    const nIndexRef = useRef(nIndex);
     const feedingsRef = useRef(feedings);
     
     // Update refs when values change
     useEffect(() => {
-        feedingRef.current = feeding;
-        nIndexRef.current = nIndex;
         feedingsRef.current = feedings;
-    }, [feeding, nIndex, feedings]);
+    }, [feedings]);
 
     //for closing index (keeping as separate state since it's independent)
     const [closedIndex, setClosedIndex] = useState([]);
@@ -250,8 +209,10 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
     const [isClosedFeedingShown, setIsClosedFeedingShown] = useState(false);
 
     const toggleClosedFeeding = () => {
-        setIsClosedFeedingShown(!isClosedFeedingShown);
-        displayClosedFeeding(!isClosedFeedingShown);
+        setIsClosedFeedingShown((previous) => {
+            displayClosedFeeding(!previous);
+            return !previous;
+        });
     };
 
     /**
@@ -296,15 +257,8 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
      * @param {string} Recipient - The recipient identifier (e.g., "A", "B", "C")
      */
     const setRecipient = useCallback((Recipient) => {
-        // Use refs to get latest values without dependency issues
-        const currentFeeding = feedingRef.current;
-        const currentNIndex = nIndexRef.current;
-        let items = [...currentFeeding.Number_of_Items];
-        let item = items[currentNIndex];
-        item.Recipient = Recipient;
-
-        dispatchFeeding({ type: 'SET_NUMBER_ITEMS', payload: items });
-    }, [dispatchFeeding]);
+        dispatchFeeding({ type: 'SET_ITEM_FIELD', payload: { index: nIndex, field: 'Recipient', value: Recipient } });
+    }, [dispatchFeeding, nIndex]);
 
     /**
      * Sets the prey item identifier for the currently selected item in Number_of_Items
@@ -312,15 +266,8 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
      * @param {string} Prey_Item - The prey item code (e.g., "H", "U", "R", "S")
      */
     const setPreyItem = useCallback((Prey_Item) => {
-        // Use refs to get latest values without dependency issues
-        const currentFeeding = feedingRef.current;
-        const currentNIndex = nIndexRef.current;
-        let items = [...currentFeeding.Number_of_Items];
-        let item = items[currentNIndex];
-        item.Prey_Item = Prey_Item;
-
-        dispatchFeeding({ type: 'SET_NUMBER_ITEMS', payload: items });
-    }, [dispatchFeeding]);
+        dispatchFeeding({ type: 'SET_ITEM_FIELD', payload: { index: nIndex, field: 'Prey_Item', value: Prey_Item } });
+    }, [dispatchFeeding, nIndex]);
 
     /**
      * Sets the prey size value for the currently selected item in Number_of_Items
@@ -328,15 +275,8 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
      * @param {string} Prey_Size - The prey size value (e.g., "0.25", "0.5", "1.0")
      */
     const setPreySize = useCallback((Prey_Size) => {
-        // Use refs to get latest values without dependency issues
-        const currentFeeding = feedingRef.current;
-        const currentNIndex = nIndexRef.current;
-        let items = [...currentFeeding.Number_of_Items];
-        let item = items[currentNIndex];
-        item.Prey_Size = Prey_Size;
-
-        dispatchFeeding({ type: 'SET_NUMBER_ITEMS', payload: items });
-    }, [dispatchFeeding]);
+        dispatchFeeding({ type: 'SET_ITEM_FIELD', payload: { index: nIndex, field: 'Prey_Size', value: Prey_Size } });
+    }, [dispatchFeeding, nIndex]);
 
     /**
      * Sets the arrival time for the current feeding
@@ -383,7 +323,7 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
             const feedingsArray = Array.isArray(prevFeedings) ? prevFeedings : [];
             const newFeedings = [...feedingsArray];
             if (index >= 0 && index < newFeedings.length) {
-                newFeedings[index] = feeding;
+                newFeedings[index] = normalizeFeeding(feeding, feeding.FeedingID);
             }
             return newFeedings;
         });
@@ -399,7 +339,7 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
     const handleNewFeeding = useCallback(() => {
         const feedingsArray = Array.isArray(feedingsRef.current) ? feedingsRef.current : [];
         const nextId = feedingsArray.length + 1;
-        const newFeeding = { ...initialFeeding, FeedingID: nextId };
+        const newFeeding = createEmptyFeeding(nextId);
         
         setFeedings(prevFeedings => {
             const prevArray = Array.isArray(prevFeedings) ? prevFeedings : [];
@@ -419,7 +359,7 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
                 nIndex: 0
             }
         });
-    }, [initialFeeding, setFeedings, index, feeding]);
+    }, [setFeedings, index, feeding]);
 
     /**
      * Creates a clean message display for showing lists of items (e.g., filled fields, empty fields)
@@ -730,6 +670,7 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
                     }}>
                         <span>Max:</span>
                         <select
+                            aria-label="Maximum quick-select entries"
                             value={maxEntries}
                             onChange={(e) => setMaxEntries(parseInt(e.target.value))}
                             style={{ 
@@ -750,8 +691,8 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
                 <div style={styles.headContainer}>
                     <div style={styles.upperMenuContainer}>
                         <div style={styles.timerBtnContainer}>
-                            <Timer setTime={setTimeArrive} data={feeding.Time_Arrive} label="Time start" description="Time start" styles={styles} hasDatePicker={false} format='hh:mm:ss' />
-                            <Timer setTime={setTimeDepart} data={feeding.Time_Depart} label="Time depart" description="Time depart" styles={styles} hasDatePicker={false} format='hh:mm:ss' />
+                            <Timer setTime={setTimeArrive} data={feeding.Time_Arrive} label="Time start" description="Time start" styles={styles} hasDatePicker={false} format={FEEDING_TIME_FORMAT} />
+                            <Timer setTime={setTimeDepart} data={feeding.Time_Depart} label="Time depart" description="Time depart" styles={styles} hasDatePicker={false} format={FEEDING_TIME_FORMAT} />
                         </div>
 
                         <div style={styles.plotNoItemBtn}>
@@ -839,8 +780,9 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
                     </div>
                 </div>
 
-                <div style={styles.stintlContainer}>
-                    <ConfigProvider
+                <div className="feeding-selector-scroll">
+                    <div className="feeding-selector-grid" style={styles.stintlContainer}>
+                        <ConfigProvider
                         config={config}
                         slicedConfig={slicedConfig}
                         maxEntries={maxEntries}
@@ -859,7 +801,8 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
                                 <PreyItem data={feeding.Number_of_Items[nIndex].Prey_Item} />
                             </FeedingProvider>
                         </StylesProvider>
-                    </ConfigProvider>
+                        </ConfigProvider>
+                    </div>
                 </div>
 
                 <div>

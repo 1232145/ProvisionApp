@@ -1,3 +1,17 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+  max-width: 100%;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -5,6 +19,87 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  color: #1f1f1f;
+}
+
+.app-shell {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 0 24px;
+}
+
+.stint-card {
+  width: min(calc(100% - 16px), 1100px);
+  margin: 8px auto;
+}
+
+.stint-actions {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.stint-action,
+.stint-action-slot {
+  width: 100%;
+  min-width: 0;
+}
+
+.stint-action-slot {
+  display: block;
+}
+
+.data-table-shell {
+  width: min(100%, 1100px);
+  margin: 0 auto;
+}
+
+.last-save-time {
+  margin: 8px 0;
+  color: #666;
+  font-size: 12px;
+  font-style: italic;
+  text-align: center;
+}
+
+.feeding-selector-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.feeding-selector-grid {
+  min-width: 760px;
+}
+
+@media (max-width: 900px) {
+  .stint-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  .stint-card {
+    padding: 12px !important;
+  }
+
+  .stint-card .ant-col {
+    padding: 8px 0 !important;
+  }
+
+  .stint-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .stint-card h1 {
+    font-size: 25px;
+  }
+}
+
+@media (max-width: 420px) {
+  .stint-actions {
+    grid-template-columns: 1fr;
+  }
 }
 
 code {

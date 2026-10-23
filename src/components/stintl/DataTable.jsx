@@ -31,7 +31,6 @@ function DataTable(props) {
   );
 
   const stintColumns = [
-    { title: '#', key: 'rownum', width: 50, render: (_, __, index) => index + 1 },
     { title: 'Type', dataIndex: 'Stint_Type', key: 'Stint_Type', width: 180, render: renderCell },
     { title: 'Island', dataIndex: 'Island', key: 'Island', width: 150, render: renderCell },
     {
@@ -49,7 +48,6 @@ function DataTable(props) {
   ];
 
   const feedingColumns = [
-    { title: '#', key: 'rownum', width: 50, render: (_, __, index) => index + 1 },
     { title: 'Feeding ID', dataIndex: 'FeedingID', key: 'FeedingID', width: 100, render: renderCell },
     { title: 'Nest', dataIndex: 'Nest', key: 'Nest', width: 100, render: renderCell },
     { title: 'Time Arrive', dataIndex: 'Time_Arrive', key: 'Time_Arrive', width: 130, render: renderCell },

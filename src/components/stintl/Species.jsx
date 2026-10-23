@@ -15,11 +15,15 @@ function Species({ setSpecies, data, styles, config }) {
 
   return (
     <div style={styles.inputContainer}>
-      <p style={styles.labelContainer}><span style={styles.label}>Species:</span></p>
+      <label htmlFor="species-field" style={styles.labelContainer}>
+        <span style={styles.label}>Species:</span>
+      </label>
       <Select
+        id="species-field"
         mode="multiple"
         value={selectedValues}
         onChange={setSpecies}
+        aria-label="Species"
         placeholder="Select species (select multiple if co-watching)"
         style={{ width: '100%' }}
         showSearch

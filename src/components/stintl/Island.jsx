@@ -21,14 +21,15 @@ function Island({ setIsland, data, styles, config }) {
 
   return (
     <div style={styles.inputContainer}>
-      <p style={styles.labelContainer}>
+      <label htmlFor="island-field" style={styles.labelContainer}>
         <span style={styles.label}>Island:</span>
-      </p>
+      </label>
       {hasConfigData ? (
         <Select
           placeholder="Select an island"
           style={{ width: '100%' }}
           onChange={handleSelectChange}
+          aria-label="Island"
           allowClear
           showSearch
           optionFilterProp="children"
@@ -43,9 +44,11 @@ function Island({ setIsland, data, styles, config }) {
         </Select>
       ) : (
         <input
+          id="island-field"
           onChange={handleInputChange}
           value={data}
           placeholder="Island"
+          aria-label="Island"
           style={{ ...styles.inputField, width: '100%' }}
         />
       )}

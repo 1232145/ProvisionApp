@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 /**
  * Custom hook for debouncing function calls
@@ -8,6 +8,10 @@ import { useCallback, useRef } from 'react';
  */
 export const useDebounce = (func, delay) => {
   const timeoutRef = useRef(null);
+
+  useEffect(() => () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+  }, []);
 
   return useCallback((...args) => {
     // Clear previous timeout

@@ -31,9 +31,10 @@ function Provider({ data }) {
           <Button key={index} value={item} handleData={setProvider} selected={item === data} />
         ))}
         <Button handleData={setProvider} value="" />
-        <Button handleData={setProvider} value="drop-down" selected={data} dropdownValues={dropdownValues} />
+        <Button handleData={setProvider} value="drop-down" selected={data} dropdownValues={dropdownValues} ariaLabel="Additional provider options" />
         <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
           <Input
+            aria-label="Custom provider"
             placeholder="Write in..."
             value={customValue}
             onChange={(e) => setCustomValue(e.target.value)}

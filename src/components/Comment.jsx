@@ -6,11 +6,15 @@ const Comment = ({ setComment, data, styles }) => {
 
   return (
     <div style={styles.inputContainer}>
-      <p style={styles.labelContainer}><span style={styles.label}>Comment:</span></p>
+      <label htmlFor="comment-field" style={styles.labelContainer}>
+        <span style={styles.label}>Comment:</span>
+      </label>
       <input
+        id="comment-field"
         onChange={(e) => handleChange(e, "last")}
         value={data}
         placeholder="Comment"
+        aria-label="Comment"
         style={styles.inputField}
       />
     </div>

@@ -21,14 +21,15 @@ function ObserverLocation({ setObs, data, styles, config }) {
 
   return (
     <div style={styles.inputContainer}>
-      <p style={styles.labelContainer}>
+      <label htmlFor="observer-location-field" style={styles.labelContainer}>
         <span style={styles.label}>Obs location:</span>
-      </p>
+      </label>
       {hasConfigData ? (
         <Select
           placeholder="Select an observer location"
           style={{ width: '100%' }}
           onChange={handleSelectChange}
+          aria-label="Observer location"
           allowClear
           showSearch
           optionFilterProp="children"
@@ -43,9 +44,11 @@ function ObserverLocation({ setObs, data, styles, config }) {
         </Select>
       ) : (
         <input
+          id="observer-location-field"
           onChange={handleInputChange}
           value={data}
           placeholder="Observer location"
+          aria-label="Observer location"
           style={{ ...styles.inputField, width: '100%' }}
         />
       )}

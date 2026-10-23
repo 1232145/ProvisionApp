@@ -40,7 +40,7 @@ const selectStyleSelected = {
 
 const dropdownStyle = { fontSize: '16px' };
 
-function Button({ handleData, value, type, selected, dropdownValues }) {
+function Button({ handleData, value, type, selected, dropdownValues, ariaLabel }) {
   // Memoize callbacks to prevent re-renders
   const handleClear = useCallback(() => {
     handleData("");
@@ -78,6 +78,7 @@ function Button({ handleData, value, type, selected, dropdownValues }) {
 
     return (
       <Select
+        aria-label={ariaLabel || 'Additional options'}
         style={selectStyle}
         value={isSelectedValid ? selected : ""}
         onChange={handleSelectChange}
@@ -114,6 +115,7 @@ export default React.memo(Button, (prevProps, nextProps) => {
         prevProps.type === nextProps.type &&
         prevProps.selected === nextProps.selected &&
         prevProps.handleData === nextProps.handleData &&
+        prevProps.ariaLabel === nextProps.ariaLabel &&
         JSON.stringify(prevProps.dropdownValues) === JSON.stringify(nextProps.dropdownValues)
     );
 });

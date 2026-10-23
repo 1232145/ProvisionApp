@@ -31,9 +31,10 @@ function Nest({ data }) {
           <Button key={index} handleData={setNest} value={item} selected={item === data} />
         ))}
         <Button handleData={setNest} value="" />
-        <Button handleData={setNest} selected={data} value="drop-down" dropdownValues={dropdownValues} />
+        <Button handleData={setNest} selected={data} value="drop-down" dropdownValues={dropdownValues} ariaLabel="Additional nest options" />
         <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
           <Input
+            aria-label="Custom nest"
             placeholder="Write in..."
             value={customValue}
             onChange={(e) => setCustomValue(e.target.value)}

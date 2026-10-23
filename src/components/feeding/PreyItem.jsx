@@ -35,9 +35,10 @@ function PreyItem({ data }) {
           <Button key={index} value={item} handleData={setPreyItem} selected={item === data} />
         ))}
         <Button handleData={setPreyItem} value="" />
-        <Button handleData={setPreyItem} value="drop-down" selected={data} dropdownValues={dropdownValues} />
+        <Button handleData={setPreyItem} value="drop-down" selected={data} dropdownValues={dropdownValues} ariaLabel="Additional prey item options" />
         <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
           <Input
+            aria-label="Custom prey item"
             placeholder="Write in..."
             value={customValue}
             onChange={(e) => setCustomValue(e.target.value)}

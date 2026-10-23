@@ -31,9 +31,10 @@ function Recipient({ data }) {
           <Button key={index} value={item} handleData={setRecipient} selected={data === item} />
         ))}
         <Button handleData={setRecipient} value="" />
-        <Button handleData={setRecipient} value="drop-down" selected={data} dropdownValues={dropdownValues} />
+        <Button handleData={setRecipient} value="drop-down" selected={data} dropdownValues={dropdownValues} ariaLabel="Additional recipient options" />
         <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
           <Input
+            aria-label="Custom recipient"
             placeholder="Write in..."
             value={customValue}
             onChange={(e) => setCustomValue(e.target.value)}

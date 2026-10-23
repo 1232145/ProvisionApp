@@ -1,5 +1,6 @@
 import React from 'react'
 import { Button, Modal, message } from 'antd';
+import { createEmptyFeedingItem } from '../../domain/models';
 
 function NumberItems({ data, changeIndex, nIndex, setNumberItems, styles }) {
     styles = {
@@ -24,15 +25,9 @@ function NumberItems({ data, changeIndex, nIndex, setNumberItems, styles }) {
         },
     };
 
-    const initial_item = {
-        Recipient: "",
-        Prey_Item: "",
-        Prey_Size: "",
-    }
-
     // Add 1 more item to NumberItems
     const handleAddData = () => {
-        setNumberItems([...data, initial_item])
+        setNumberItems([...data, createEmptyFeedingItem()])
         handleChangeItem(data.length);
     }
 

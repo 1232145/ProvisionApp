@@ -4,6 +4,7 @@ const fs = require("fs");
 
 let win;
 let autoSaveFilePath;
+let isClosing = false;
 
 function sendToRenderer(channel, payload) {
   if (!win || win.isDestroyed()) return;
@@ -16,8 +17,9 @@ function createWindow() {
     width: 800,
     height: 600,
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
+      preload: path.join(__dirname, "preload.js"),
+      nodeIntegration: false,
+      contextIsolation: true,
     },
   });
 
@@ -35,7 +37,7 @@ function createWindow() {
 
   // win.webContents.openDevTools();
 
-  let isClosing = false; // To track if the close is confirmed by the user
+  isClosing = false;
 
   win.on("close", (e) => {
     if (!isClosing) {
@@ -48,11 +50,6 @@ function createWindow() {
     win = null;
   });
 
-  // Listen for confirmation from the renderer to close the window
-  ipcMain.on("confirm-close", () => {
-    isClosing = true;
-    win.close();
-  });
 }
 
 // Check if auto-save exists and send it to the renderer (React)
@@ -97,36 +94,43 @@ ipcMain.on("check-save-file-exists", () => {
 });
 
 // Listen for CSV file save requests - opens a native save dialog
-ipcMain.on("save-file", async (event, { content, fileName }) => {
+ipcMain.handle("save-file", async (_event, { content, fileName }) => {
   try {
+    if (typeof content !== "string" || typeof fileName !== "string" || !fileName.trim()) {
+      throw new Error("Invalid file save request");
+    }
+
+    const safeFileName = path.basename(fileName);
     const { canceled, filePath } = await dialog.showSaveDialog(win, {
-      defaultPath: fileName,
+      defaultPath: safeFileName,
       filters: [{ name: "CSV Files", extensions: ["csv"] }],
     });
 
     if (canceled || !filePath) {
-      sendToRenderer("save-file-result", false);
-      return;
+      return { success: false, canceled: true };
     }
 
-    fs.writeFile(filePath, content, "utf-8", (err) => {
-      if (err) {
-        console.error("Error saving file:", err);
-        sendToRenderer("save-file-result", false);
-      } else {
-        console.log("File saved:", filePath);
-        sendToRenderer("save-file-result", true);
-      }
-    });
+    await fs.promises.writeFile(filePath, content, "utf-8");
+    console.log("File saved:", filePath);
+    return { success: true, filePath };
   } catch (error) {
     console.error("Error in save-file handler:", error);
-    sendToRenderer("save-file-result", false);
+    return { success: false, error: error.message || "Unable to save file" };
   }
+});
+
+// Listen for confirmation from the renderer to close the window.
+ipcMain.on("confirm-close", () => {
+  isClosing = true;
+  if (win && !win.isDestroyed()) win.close();
 });
 
 // Save auto-save data and wait for real disk-write completion
 ipcMain.handle("autosave", async (event, data) => {
-  const saveData = data || {};
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    return { success: false, error: "Invalid autosave payload" };
+  }
+  const saveData = data;
 
   try {
     console.log("[autosave] write start", autoSaveFilePath);

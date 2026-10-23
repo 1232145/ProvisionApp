@@ -3,6 +3,7 @@ import { Button, Input, Row, Col, DatePicker } from 'antd';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import moment from 'moment';
+import { FEEDING_TIME_FORMAT, isValidFeedingTime } from '../domain/models';
 
 dayjs.extend(customParseFormat);
 
@@ -24,6 +25,9 @@ function Timer({
     // the parent owns the value, so the picker always reflects the latest external change).
     const datePart = (hasDatePicker && data) ? (data.split(' ')[0] || '') : '';
     const timePart = (hasDatePicker && data) ? (data.split(' ')[1] || '') : '';
+    const inputId = `timer-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+    const isFeedingTime = !hasDatePicker && format === FEEDING_TIME_FORMAT;
+    const hasInvalidFeedingTime = isFeedingTime && Boolean(data) && !isValidFeedingTime(data);
 
     // Parse the date part with Day.js strict mode so a missing/partial date → null
     const datePickerValue = (() => {
@@ -63,10 +67,10 @@ function Timer({
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', marginTop: '10px' }}>
-            <p style={styles.labelContainer}>
+            <label htmlFor={inputId} style={styles.labelContainer}>
                 <span style={styles.label}>{label}:</span>{' '}
                 {data || <span style={{ color: '#aaa', fontStyle: 'italic' }}>{format}</span>}
-            </p>
+            </label>
 
             {hasDatePicker ? (
                 <Row gutter={8} style={{ marginBottom: '10px' }}>
@@ -74,21 +78,25 @@ function Timer({
                         {/* inputReadOnly prevents typing in the picker's own field,
                             which was causing garbage dates. Users click to pick the date. */}
                         <DatePicker
+                            id={inputId}
                             value={datePickerValue}
                             onChange={handleDatePickerChange}
                             format={DATE_DISPLAY}
                             style={{ width: '100%' }}
                             placeholder="MM/DD/YYYY"
+                            aria-label={`${label} date`}
                             disabledDate={disabledDate}
                             inputReadOnly
                         />
                     </Col>
                     <Col span={9}>
                         <Input
+                            id={`${inputId}-time`}
                             value={timePart}
                             onChange={handleTimePartChange}
                             placeholder="HH:mm"
                             maxLength={5}
+                            aria-label={`${label} time`}
                             style={{ width: '100%' }}
                         />
                     </Col>
@@ -98,14 +106,25 @@ function Timer({
                     <Row style={{ marginBottom: '10px' }}>
                         <Col span={24}>
                             <Input
+                                id={inputId}
                                 value={data}
                                 onChange={handleFullInputChange}
                                 placeholder={format}
+                                inputMode={isFeedingTime ? 'numeric' : undefined}
+                                maxLength={isFeedingTime ? FEEDING_TIME_FORMAT.length : undefined}
+                                aria-label={label}
+                                aria-invalid={hasInvalidFeedingTime}
                                 style={{ width: '100%' }}
                             />
                         </Col>
                     </Row>
                 )
+            )}
+
+            {hasInvalidFeedingTime && (
+                <div role="alert" style={{ color: '#d4380d', fontSize: '12px', marginBottom: '8px' }}>
+                    Use 24-hour HH:mm:ss format.
+                </div>
             )}
 
             {hasButton && (

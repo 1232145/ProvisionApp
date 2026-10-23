@@ -33,14 +33,15 @@ function Name({ setName, data, styles, config }) {
 
   return (
     <div style={styles.inputContainer}>
-      <p style={styles.labelContainer}>
+      <div style={styles.labelContainer}>
         <span style={styles.label}>Name:</span>
-      </p>
+      </div>
       {hasConfigData ? (
         <Select
           placeholder="Select a name..."
           style={{ width: '100%' }}
           onChange={handleSelectChange}
+          aria-label="Name"
           allowClear
           showSearch
           optionFilterProp="children"
@@ -56,15 +57,19 @@ function Name({ setName, data, styles, config }) {
       ) : (
         <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
           <Input
+            id="first-name-field"
             onChange={handleFirstChange}
             value={typeof data === 'object' ? (data?.First_Name || '') : (combined.split(/\s+/)[0] || '')}
             placeholder="First Name"
+            aria-label="First name"
             style={{ ...styles.inputField, width: '50%' }}
           />
           <Input
+            id="last-name-field"
             onChange={handleLastChange}
             value={typeof data === 'object' ? (data?.Last_Name || '') : (combined.split(/\s+/).slice(1).join(' ') || '')}
             placeholder="Last Name"
+            aria-label="Last name"
             style={{ ...styles.inputField, width: '50%' }}
           />
         </div>

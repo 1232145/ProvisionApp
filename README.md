@@ -16,6 +16,16 @@ Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
 The page will reload when you make changes.\
 You may also see any lint errors in the console.
 
+### `npm test`
+
+Runs the unit and component test suite once in CI mode:
+
+```bash
+CI=true npm test -- --watchAll=false --runInBand
+```
+
+The tests cover CSV round trips, data normalization, immutable feeding updates, validation, and 24-hour feeding times.
+
 ### `npm run electron`
 
 Runs the app in Electron application (Windows Desktop).
@@ -65,6 +75,18 @@ It correctly bundles React in production mode and optimizes the build for the be
 
 The build is minified and the filenames include the hashes.\
 Your app is ready to be deployed!
+
+Feeding arrival and departure times are stored and exported using the 24-hour `HH:mm:ss` format.
+
+### Release verification
+
+Before shipping a desktop or iOS build:
+
+1. Run the test suite and production build.
+2. Verify the main stint form at phone widths, iPad portrait/landscape, and desktop width.
+3. Enter a complete stint and feeding, save the CSV, reload autosave, and confirm the values remain unchanged.
+4. Test Electron autosave and native file export in the packaged application.
+5. Test Capacitor autosave and file export in an iOS simulator and on a signed device build.
 
 ### `npm run eject`
 
