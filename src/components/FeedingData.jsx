@@ -8,6 +8,7 @@ import Recipient from './feeding/Recipient';
 import FeedingSpecies from './feeding/FeedingSpecies';
 import Timer from './Timer';
 import Comment from './Comment';
+import ValidationSummary from './ValidationSummary';
 import { useState, useEffect, useMemo, useReducer, useCallback, useRef } from 'react';
 import { flushSync } from 'react-dom';
 import React from 'react';
@@ -18,6 +19,8 @@ import { FeedingProvider } from '../contexts/FeedingContext';
 import {
     createEmptyFeeding,
     FEEDING_TIME_FORMAT,
+    getFieldLabel,
+    getMissingFeedingFieldLabels,
     normalizeFeeding,
 } from '../domain/models';
 import { feedingReducer } from '../domain/feedingReducer';
@@ -432,12 +435,12 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
                         value.forEach((item, i) => {
                             Object.entries(item).forEach(([keyItem, field]) => {
                                 if (field !== "") {
-                                    filled.push(`Item ${i + 1}: ${keyItem}`);
+                                    filled.push(`Item ${i + 1} · ${getFieldLabel(keyItem)}`);
                                 }
                             });
                         });
                     } else if (value !== "") {
-                        filled.push(value);
+                        filled.push(getFieldLabel(key));
                     }
                 }
             });
@@ -505,33 +508,19 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
      * @param {number} index - The index of the feeding to close
      */
     const handleCloseFeeding = (index) => {
-        const emptyFields = [];
-
-        // Collect empty fields into the array
-        Object.entries(feedingTemp).forEach(([field, value]) => {
-            if (field === 'Comment' || field === 'Species') return;
-
-            if (Array.isArray(value)) {
-                value.forEach((item, i) => {
-                    Object.entries(item).forEach(([itemField, itemValue]) => {
-                        if (itemValue === '') {
-                            emptyFields.push(`Item ${i + 1}: ${itemField}`);
-                        }
-                    });
-                });
-            } else if (value === '') {
-                emptyFields.push(field);
-            }
-        });
+        const emptyFields = getMissingFeedingFieldLabels(feedingTemp);
 
         if (emptyFields.length > 0) {
-            message.error({
-                content: displayItemsMessage(
-                    emptyFields,
-                    "Please fill in the following fields:",
-                    () => message.destroy()
+            Modal.warning({
+                title: `Feeding ${index + 1} is not ready to close`,
+                content: (
+                    <ValidationSummary
+                        fields={emptyFields}
+                        message="Add the missing information below before closing this feeding."
+                    />
                 ),
-                duration: 5,
+                okText: 'Return to feeding',
+                width: 520,
             });
             return;
         }

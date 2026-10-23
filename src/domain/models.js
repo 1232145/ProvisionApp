@@ -138,6 +138,37 @@ export const hasMeaningfulStintData = (value) => {
 
 const labelFor = (key) => FIELD_LABELS[key] || key.replaceAll('_', ' ');
 
+export const getFieldLabel = (key) => labelFor(key);
+
+export const getMissingFeedingFieldLabels = (feeding) => {
+  const missing = [];
+  const requiredFields = ['Nest', 'Time_Arrive', 'Time_Depart', 'Provider', 'Plot_Status'];
+
+  requiredFields.forEach((key) => {
+    if (feeding?.[key] === '' || feeding?.[key] == null) {
+      missing.push(labelFor(key));
+    }
+  });
+
+  if (feeding?.Time_Arrive && !isValidFeedingTime(feeding.Time_Arrive)) {
+    missing.push('Time start · use 24-hour HH:mm:ss');
+  }
+  if (feeding?.Time_Depart && !isValidFeedingTime(feeding.Time_Depart)) {
+    missing.push('Time depart · use 24-hour HH:mm:ss');
+  }
+
+  const items = Array.isArray(feeding?.Number_of_Items) ? feeding.Number_of_Items : [];
+  items.forEach((item, itemIndex) => {
+    ['Recipient', 'Prey_Item', 'Prey_Size'].forEach((key) => {
+      if (item?.[key] === '' || item?.[key] == null) {
+        missing.push(`Item ${itemIndex + 1} · ${labelFor(key)}`);
+      }
+    });
+  });
+
+  return missing;
+};
+
 export const getMissingFieldLabels = (stint) => {
   const missing = [];
   const requiredStintFields = [

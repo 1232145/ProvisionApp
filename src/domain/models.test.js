@@ -2,6 +2,7 @@ import {
   createEmptyFeeding,
   createInitialStint,
   getMissingFieldLabels,
+  getMissingFeedingFieldLabels,
   isValidFeedingTime,
   normalizeFeeding,
 } from './models';
@@ -47,6 +48,21 @@ describe('domain models', () => {
     expect(missing).toContain('Stint: First name');
     expect(missing).toContain('Feeding 1: Time start');
     expect(missing).not.toContain('Stint: First_Name');
+  });
+
+  test('reports friendly feeding validation labels', () => {
+    const missing = getMissingFeedingFieldLabels(createEmptyFeeding(1));
+
+    expect(missing).toEqual(expect.arrayContaining([
+      'Nest',
+      'Time start',
+      'Time depart',
+      'Provider',
+      'Item 1 · Recipient',
+      'Item 1 · Prey item',
+      'Item 1 · Prey size',
+    ]));
+    expect(missing).not.toContain('Time_Arrive');
   });
 });
 

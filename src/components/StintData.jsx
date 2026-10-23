@@ -10,6 +10,7 @@ import DataTable from './stintl/DataTable';
 import Timer from './Timer';
 import Comment from './Comment';
 import FeedingData from './FeedingData';
+import ValidationSummary from './ValidationSummary';
 import { useAutoSave } from '../hooks/useAutoSave';
 import platformFS from '../utils/platform';
 import {
@@ -186,14 +187,16 @@ function StintData() {
     const missingFields = getMissingFieldLabels(data);
 
     if (missingFields.length > 0) {
-      Modal.error({
-        title: 'Missing required fields',
+      Modal.warning({
+        title: 'This stint is not ready to save',
         content: (
-          <div style={{ maxHeight: '45vh', overflowY: 'auto' }}>
-            <p>Please fill in the following fields:</p>
-            <ul>{missingFields.map((field) => <li key={field}>{field}</li>)}</ul>
-          </div>
+          <ValidationSummary
+            fields={missingFields}
+            message="Complete the required information below before saving the CSV file."
+          />
         ),
+        okText: 'Return to form',
+        width: 560,
       });
       return;
     }
