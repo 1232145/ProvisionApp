@@ -169,6 +169,17 @@ export const getMissingFeedingFieldLabels = (feeding) => {
   return missing;
 };
 
+export const getFirstIncompleteFeedingIndex = (feedings, completedFeedingIds) => {
+  if (!Array.isArray(feedings)) return -1;
+
+  const completedIds = Array.isArray(completedFeedingIds) ? completedFeedingIds : [];
+  return feedings.findIndex((feeding, index) => {
+    if (!feeding) return false;
+    const feedingId = feeding.FeedingID ?? index;
+    return !completedIds.includes(feedingId);
+  });
+};
+
 export const getMissingFieldLabels = (stint) => {
   const missing = [];
   const requiredStintFields = [

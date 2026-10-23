@@ -104,6 +104,14 @@ body {
   line-height: 1;
 }
 
+.feeding-list-entry {
+  display: flex;
+  flex: 1 1 180px;
+  min-width: 180px;
+  align-items: center;
+  gap: 8px;
+}
+
 @media (max-width: 520px) {
   .validation-summary-list {
     grid-template-columns: 1fr;

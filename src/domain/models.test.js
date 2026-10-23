@@ -1,6 +1,7 @@
 import {
   createEmptyFeeding,
   createInitialStint,
+  getFirstIncompleteFeedingIndex,
   getMissingFieldLabels,
   getMissingFeedingFieldLabels,
   isValidFeedingTime,
@@ -63,6 +64,14 @@ describe('domain models', () => {
       'Item 1 · Prey size',
     ]));
     expect(missing).not.toContain('Time_Arrive');
+  });
+
+  test('finds the first incomplete feeding after completed rows are hidden', () => {
+    const feedings = [1, 2, 3, 4].map((FeedingID) => ({ FeedingID }));
+
+    expect(getFirstIncompleteFeedingIndex(feedings, [1, 2])).toBe(2);
+    expect(getFirstIncompleteFeedingIndex(feedings, [1, 3])).toBe(1);
+    expect(getFirstIncompleteFeedingIndex(feedings, [1, 2, 3, 4])).toBe(-1);
   });
 });
 

@@ -19,6 +19,7 @@ import { FeedingProvider } from '../contexts/FeedingContext';
 import {
     createEmptyFeeding,
     FEEDING_TIME_FORMAT,
+    getFirstIncompleteFeedingIndex,
     getFieldLabel,
     getMissingFeedingFieldLabels,
     normalizeFeeding,
@@ -139,9 +140,12 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
             backgroundColor: 'green',
             color: 'white',
         },
-        closedFeeding: {
-            backgroundColor: 'blue',
-            color: 'white',
+        completedFeeding: {
+            backgroundColor: '#f6ffed',
+            borderColor: '#95de64',
+            boxShadow: 'inset 4px 0 #52c41a',
+            color: '#1f1f1f',
+            fontWeight: 600,
         },
         headContainer: {
             display: 'flex',
@@ -206,17 +210,9 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
         feedingsRef.current = feedings;
     }, [feedings]);
 
-    //for closing index (keeping as separate state since it's independent)
-    const [closedIndex, setClosedIndex] = useState([]);
-    const [displayClosed, setDisplayClosed] = useState(true);
-    const [isClosedFeedingShown, setIsClosedFeedingShown] = useState(false);
-
-    const toggleClosedFeeding = () => {
-        setIsClosedFeedingShown((previous) => {
-            displayClosedFeeding(!previous);
-            return !previous;
-        });
-    };
+    // Completion status is local workflow state, not part of the CSV schema.
+    const [completedFeedingIds, setCompletedFeedingIds] = useState([]);
+    const [showCompleted, setShowCompleted] = useState(true);
 
     /**
      * Sets the plot status for the current feeding (e.g., "Inside Plot", "Outside Plot")
@@ -501,22 +497,55 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
         });
     }, [feedings, index, handleSaveFeeding]);
 
+    const handleShowCompletedChange = useCallback((event) => {
+        const nextShowCompleted = event.target.checked;
+
+        if (nextShowCompleted) {
+            setShowCompleted(true);
+            return;
+        }
+
+        const currentFeedingId = feeding?.FeedingID ?? index;
+        const currentIsCompleted = completedFeedingIds.includes(currentFeedingId);
+
+        if (currentIsCompleted) {
+            const firstIncompleteIndex = getFirstIncompleteFeedingIndex(feedings, completedFeedingIds);
+
+            if (firstIncompleteIndex === -1) {
+                message.info('All feedings are completed, so they remain visible.');
+                return;
+            }
+
+            handleOpenFeeding(firstIncompleteIndex);
+        }
+
+        setShowCompleted(false);
+    }, [completedFeedingIds, feedings, feeding, index, handleOpenFeeding]);
+
     /**
-     * Closes a feeding by marking it as closed (adds to closedIndex array)
-     * Validates that all required fields are filled before closing
-     * Shows error message if any required fields are missing
-     * @param {number} index - The index of the feeding to close
+     * Marks a feeding complete or reopens it for editing.
+     * A feeding must be complete before it can be marked complete.
+     * @param {number} feedingIndex - The index of the feeding to update
      */
-    const handleCloseFeeding = (index) => {
+    const handleToggleCompleted = (feedingIndex) => {
+        const selectedFeeding = Array.isArray(feedings) ? feedings[feedingIndex] : null;
+        const feedingId = selectedFeeding?.FeedingID ?? feedingIndex;
+
+        if (completedFeedingIds.includes(feedingId)) {
+            setCompletedFeedingIds((previous) => previous.filter((item) => item !== feedingId));
+            message.info(`Feeding ${feedingIndex + 1} reopened for editing.`);
+            return;
+        }
+
         const emptyFields = getMissingFeedingFieldLabels(feedingTemp);
 
         if (emptyFields.length > 0) {
             Modal.warning({
-                title: `Feeding ${index + 1} is not ready to close`,
+                title: `Feeding ${feedingIndex + 1} is not ready to mark complete`,
                 content: (
                     <ValidationSummary
                         fields={emptyFields}
-                        message="Add the missing information below before closing this feeding."
+                        message="Add the missing information below before marking this feeding complete."
                     />
                 ),
                 okText: 'Return to feeding',
@@ -525,34 +554,9 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
             return;
         }
 
-        // Handle success scenario
-        if (emptyFields.length === 0) {
-            // If all fields are filled, close the feeding
-            setClosedIndex(prevClosedIndex =>
-                prevClosedIndex.includes(index)
-                    ? prevClosedIndex.filter(item => item !== index)
-                    : [...prevClosedIndex, index]
-            );
-
-            // Show success message
-            message.success({
-                content: `Feeding ${index + 1} has been closed.`,
-                style: { marginTop: '20px' },
-                duration: 3,
-            });
-        }
-
-        // Make the closed tab disappear
-        displayClosedFeeding(false);
+        setCompletedFeedingIds((previous) => [...previous, feedingId]);
+        message.success(`Feeding ${feedingIndex + 1} marked complete.`);
     };
-
-    /**
-     * Controls the visibility of closed feedings in the feeding list
-     * @param {boolean} bool - True to show closed feedings, false to hide them
-     */
-    const displayClosedFeeding = (bool) => {
-        setDisplayClosed(bool);
-    }
 
     // Sync reducer with feedings prop when component mounts (e.g. returning from Stint view)
     // Fixes: Feeding 1 showed empty because reducer always started with initialFeeding on remount
@@ -723,37 +727,48 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
                         <div style={{ flex: '1 1 0%', minWidth: 0, boxSizing: 'border-box', overflow: 'hidden' }}>
                             <div style={styles.feedingsContainer}>
                                 <div style={styles.flexRowCenter}>
-                                    <p style={{ marginRight: '7.5px' }}>Show Closed Feeding:</p>
-                                    <Checkbox checked={isClosedFeedingShown} onChange={toggleClosedFeeding} />
+                                    <Checkbox
+                                        checked={showCompleted}
+                                        onChange={handleShowCompletedChange}
+                                        aria-label="Show completed feedings"
+                                    >
+                                        Show completed
+                                    </Checkbox>
                                 </div>
 
                                 <div style={styles.feedingItemListContainer}>
                                     {(Array.isArray(feedings) ? feedings : []).map((item, i) => {
-                                        if (closedIndex.includes(i) && !displayClosed) {
-                                            return null;
-                                        }
-                                        
                                         // Safety check for undefined item
                                         if (!item) {
                                             return null;
                                         }
 
-                                        const value = `Feeding ${i + 1}` + (item?.Nest !== "" ? `: ${item.Nest}` : "");
+                                        const feedingId = item.FeedingID ?? i;
+                                        const isCompleted = completedFeedingIds.includes(feedingId);
 
+                                        if (isCompleted && !showCompleted) {
+                                            return null;
+                                        }
+
+                                        const value = `Feeding ${i + 1}` + (item?.Nest !== "" ? `: ${item.Nest}` : "");
                                         return (
-                                            <Input
-                                                key={i}
-                                                value={value}
-                                                type="button"
-                                                onClick={() => handleOpenFeeding(i)}
-                                                style={{
-                                                    ...(index === i ? styles.selectedBtn : { marginBottom: '8px' }),
-                                                    width: 'auto',
-                                                    flexGrow: 1,
-                                                    minWidth: 'clamp(80px, 15vw, 150px)',
-                                                    fontSize: 'clamp(11px, 1.8vw, 14px)',
-                                                }}
-                                            />
+                                            <div className="feeding-list-entry" key={i}>
+                                                <Input
+                                                    value={value}
+                                                    type="button"
+                                                    aria-label={`${value}${isCompleted ? ', completed' : ', in progress'}`}
+                                                    title={isCompleted ? 'Completed' : undefined}
+                                                    onClick={() => handleOpenFeeding(i)}
+                                                    style={{
+                                                        ...(isCompleted ? styles.completedFeeding : {}),
+                                                        ...(index === i ? styles.selectedBtn : {}),
+                                                        width: 'auto',
+                                                        flexGrow: 1,
+                                                        minWidth: 0,
+                                                        fontSize: 'clamp(11px, 1.8vw, 14px)',
+                                                    }}
+                                                />
+                                            </div>
                                         );
                                     })}
                                 </div>
@@ -761,7 +776,9 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
                                 <div style={{ ...styles.flexRowCenter, marginTop: '12.5px' }}>
                                     <Button type="primary" onClick={handleNewFeeding} style={{ marginRight: '8px' }}>New</Button>
                                     <Button type="default" onClick={handleDeleteFeeding} style={{ marginRight: '8px' }}>Delete</Button>
-                                    <Button type="dashed" onClick={() => handleCloseFeeding(index)}>Close</Button>
+                                    <Button type="dashed" onClick={() => handleToggleCompleted(index)}>
+                                        {completedFeedingIds.includes(feeding?.FeedingID ?? index) ? 'Reopen' : 'Mark complete'}
+                                    </Button>
                                 </div>
                             </div>
                         </div>
