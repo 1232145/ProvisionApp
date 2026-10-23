@@ -4,17 +4,13 @@ const npmScript = process.env.npm_lifecycle_event || '';
 const isElectronBuild = npmScript === 'build' || npmScript === 'build:electron' || npmScript === 'electron';
 
 if (isElectronBuild) {
-  // Electron-specific webpack configuration
-  const nodeExternals = require("webpack-node-externals");
+  // The renderer runs with nodeIntegration disabled, so application dependencies
+  // such as React must be bundled instead of emitted as CommonJS externals.
   module.exports = {
     webpack: {
       configure: {
-        target: "electron-renderer",
-        externals: [
-          nodeExternals({
-            allowlist: [/webpack(\/.*)?/, "electron-devtools-installer"],
-          }),
-        ],
+        target: "web",
+        externals: [],
       },
     },
   };
