@@ -2,14 +2,14 @@ import React from 'react'
 import { Button, Modal, message } from 'antd';
 import { createEmptyFeedingItem } from '../../domain/models';
 
-function NumberItems({ data, changeIndex, nIndex, setNumberItems, styles }) {
-    styles = {
-        ...styles,
+function NumberItems({ data, changeIndex, nIndex, setNumberItems, styles: stylesProp }) {
+    const styles = {
+        ...stylesProp,
         numberItemsContainer: {
-            ...styles.feedingsContainer,
+            ...stylesProp.feedingsContainer,
         },
         itemsListContainer: {
-            ...styles.feedingItemListContainer,
+            ...stylesProp.feedingItemListContainer,
         },
         buttonContainer: {
             display: 'flex',

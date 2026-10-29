@@ -1,129 +1,35 @@
 # Environmental Studies Data Collection Project
 
-This project is a cross-platform data collection application built with React. It supports:
-- **Windows Desktop** (Electron)
-- **iOS/iPad** (Capacitor)
+Cross-platform React data collection application for Windows desktop (Electron) and iOS/iPad (Capacitor).
 
-## Available Scripts
+## Requirements
 
-### Development
+- Node.js >= 22.12.0
+- macOS with Xcode for iOS builds
+- Windows or a Windows CI runner for the Windows installer
 
-### `npm start`
-
-Runs the app in development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
-
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
-
-### `npm test`
-
-Runs the unit and component test suite once in CI mode:
+## Development
 
 ```bash
-CI=true npm test -- --watchAll=false --runInBand
+npm install
+npm start             # Vite development server at http://localhost:5173
+npm test              # Vitest suite
+npm run lint          # ESLint
+npm run build         # Production web bundle plus Electron bridge files
+npm run electron      # Run the rebuilt Electron app locally
 ```
 
-The tests cover CSV round trips, data normalization, immutable feeding updates, validation, and 24-hour feeding times.
-
-### `npm run electron`
-
-Runs the app in Electron application (Windows Desktop).
-
-The app will not reload when you make changes. So you should rebuild with `npm run build` every time you make changes.
-
-### Building for Different Platforms
-
-#### Windows Desktop (Electron)
-```bash
-npm run build:electron
-```
-This builds the React app and packages it as a Windows executable (.exe file).
-
-#### iOS/iPad
-```bash
-npm run build:ios
-```
-This builds the React app and syncs it with Capacitor for iOS. Then open Xcode:
-```bash
-npm run open:ios
-```
-
-**Requirements:**
-- macOS with Xcode installed
-- iOS development certificate (for device testing)
-- Node.js >= 22.0.0 (for Capacitor CLI)
-
-
-### Syncing Capacitor (After Code Changes)
-
-If you've made changes to your React code and need to sync with the iOS project:
+## Platform builds
 
 ```bash
-npm run sync:ios
+npm run build:electron   # Windows NSIS installer; run on Windows/Windows CI
+npm run build:ios        # Build web assets and sync Capacitor iOS
+npm run open:ios         # Open the iOS project in Xcode
+npm run sync:ios         # Sync existing iOS project after web changes
 ```
 
-### `npm test`
+The Electron renderer runs with `nodeIntegration: false`, `contextIsolation: true`, a sandboxed preload, and a local-only Content-Security-Policy. Desktop autosave uses an atomic temporary-file write/rename. Completion state is kept in autosave data and is intentionally omitted from the CSV schema.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Release verification
 
-### `npm run build`
-
-Builds the app for production to the `build` folder (includes Electron copy step).\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-Feeding arrival and departure times are stored and exported using the 24-hour `HH:mm:ss` format.
-
-### Release verification
-
-Before shipping a desktop or iOS build:
-
-1. Run the test suite and production build.
-2. Verify the main stint form at phone widths, iPad portrait/landscape, and desktop width.
-3. Enter a complete stint and feeding, save the CSV, reload autosave, and confirm the values remain unchanged.
-4. Test Electron autosave and native file export in the packaged application.
-5. Test Capacitor autosave and file export in an iOS simulator and on a signed device build.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Before shipping, run `npm test`, `npm run lint`, `npm run build`, `npm audit`, and `npm run build:ios`. Verify the main form, timestamp validation, feeding completion/reopen flow, CSV round-trip, autosave recovery, browser export, Electron native export, and Capacitor export on a signed iOS device or simulator. The Windows installer must be verified on Windows or CI; it is not verifiable from macOS alone.

@@ -3,7 +3,11 @@ import { Button, Input, Row, Col, DatePicker } from 'antd';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import moment from 'moment';
-import { FEEDING_TIME_FORMAT, isValidFeedingTime } from '../domain/models';
+import {
+    FEEDING_TIME_FORMAT,
+    isValidFeedingTime,
+    isValidStintClockTime,
+} from '../domain/models';
 
 dayjs.extend(customParseFormat);
 
@@ -28,6 +32,7 @@ function Timer({
     const inputId = `timer-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
     const isFeedingTime = !hasDatePicker && format === FEEDING_TIME_FORMAT;
     const hasInvalidFeedingTime = isFeedingTime && Boolean(data) && !isValidFeedingTime(data);
+    const hasInvalidStintTime = hasDatePicker && Boolean(timePart) && !isValidStintClockTime(timePart);
 
     // Parse the date part with Day.js strict mode so a missing/partial date → null
     const datePickerValue = (() => {
@@ -96,7 +101,10 @@ function Timer({
                             onChange={handleTimePartChange}
                             placeholder="HH:mm"
                             maxLength={5}
+                            inputMode="numeric"
+                            pattern="(?:[01][0-9]|2[0-3]):[0-5][0-9]"
                             aria-label={`${label} time`}
+                            aria-invalid={hasInvalidStintTime}
                             style={{ width: '100%' }}
                         />
                     </Col>
@@ -124,6 +132,12 @@ function Timer({
             {hasInvalidFeedingTime && (
                 <div role="alert" style={{ color: '#d4380d', fontSize: '12px', marginBottom: '8px' }}>
                     Use 24-hour HH:mm:ss format.
+                </div>
+            )}
+
+            {hasInvalidStintTime && (
+                <div role="alert" style={{ color: '#d4380d', fontSize: '12px', marginBottom: '8px' }}>
+                    Use 24-hour HH:mm format.
                 </div>
             )}
 

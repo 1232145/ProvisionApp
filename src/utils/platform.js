@@ -86,12 +86,29 @@ class PlatformFileSystem {
       await this.ensureCapacitorPlugins();
       if (this.filesystem && this.directory) {
         try {
+          const encodedData = encodeBase64(JSON.stringify(data, null, 2));
+          const temporaryPath = 'auto-save.json.tmp';
           await this.filesystem.writeFile({
-            path: 'auto-save.json',
-            data: encodeBase64(JSON.stringify(data, null, 2)),
+            path: temporaryPath,
+            data: encodedData,
             directory: this.directory.Documents,
             recursive: true,
           });
+
+          if (typeof this.filesystem.rename === 'function') {
+            await this.filesystem.rename({
+              from: temporaryPath,
+              to: 'auto-save.json',
+              directory: this.directory.Documents,
+            });
+          } else {
+            await this.filesystem.writeFile({
+              path: 'auto-save.json',
+              data: encodedData,
+              directory: this.directory.Documents,
+              recursive: true,
+            });
+          }
           return { success: true };
         } catch (error) {
           console.error('Error saving auto-save (Capacitor):', error);
@@ -118,7 +135,7 @@ class PlatformFileSystem {
           try {
             const result = await this.filesystem.readFile({ path: 'auto-save.json', directory });
             return JSON.parse(decodeBase64(result.data));
-          } catch (error) {
+          } catch {
             // Try the next supported location, then localStorage.
           }
         }
@@ -143,7 +160,7 @@ class PlatformFileSystem {
         try {
           const stat = await this.filesystem.stat({ path: 'auto-save.json', directory: this.directory.Documents });
           return { exists: true, lastModified: stat.mtime ? new Date(stat.mtime).toISOString() : new Date().toISOString() };
-        } catch (error) {
+        } catch {
           // Check the fallback below.
         }
       }
@@ -165,8 +182,8 @@ class PlatformFileSystem {
       let listener;
       const listenerPromise = this.ensureCapacitorPlugins().then(() => {
         if (!this.app) return null;
-        return this.app.addListener('appStateChange', ({ isActive }) => {
-          if (!isActive) callback();
+        return this.app.addListener('appStateChange', async ({ isActive }) => {
+          if (!isActive) await callback();
         });
       }).then((registeredListener) => {
         listener = registeredListener;
@@ -219,21 +236,28 @@ class PlatformFileSystem {
   }
 
   async saveFileDev(content, fileName) {
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8' });
+
     try {
-      const { saveAs } = await import('file-saver');
-      saveAs(new Blob([content], { type: 'text/csv;charset=utf-8' }), fileName);
-    } catch (error) {
-      console.error('Error saving file in browser:', error);
-      const blob = new Blob([content], { type: 'text/csv;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
+      const fileSaver = await import('file-saver');
+      const saveAs = fileSaver.saveAs || fileSaver.default?.saveAs || fileSaver.default;
+      if (typeof saveAs === 'function') {
+        saveAs(blob, fileName);
+        return null;
+      }
+    } catch {
+      // Some bundlers expose file-saver as a CommonJS default export. The
+      // native browser download below is a reliable fallback for either shape.
     }
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
     return null;
   }
 }

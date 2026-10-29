@@ -2,8 +2,13 @@ import {
   createEmptyFeeding,
   createInitialStint,
   getFirstIncompleteFeedingIndex,
+  getFilledFeedingFieldLabels,
   getMissingFieldLabels,
   getMissingFeedingFieldLabels,
+  getNextFeedingId,
+  hasMeaningfulFeedingData,
+  isValidStintClockTime,
+  isValidStintDateTime,
   isValidFeedingTime,
   normalizeFeeding,
 } from './models';
@@ -42,6 +47,22 @@ describe('domain models', () => {
     expect(isValidFeedingTime('11:30')).toBe(false);
   });
 
+  test('validates stint date and time values strictly', () => {
+    expect(isValidStintClockTime('00:00')).toBe(true);
+    expect(isValidStintClockTime('24:00')).toBe(false);
+    expect(isValidStintDateTime('02/28/2026 23:59')).toBe(true);
+    expect(isValidStintDateTime('02/29/2026 23:59')).toBe(false);
+    expect(isValidStintDateTime('2/28/2026 23:59')).toBe(false);
+  });
+
+  test('does not treat a new default feeding as meaningful', () => {
+    const emptyFeeding = createEmptyFeeding(1);
+
+    expect(hasMeaningfulFeedingData(emptyFeeding)).toBe(false);
+    expect(getFilledFeedingFieldLabels(emptyFeeding)).toEqual([]);
+    expect(getNextFeedingId([{ FeedingID: 1 }, { FeedingID: 3 }])).toBe(4);
+  });
+
   test('reports friendly required field labels', () => {
     const missing = getMissingFieldLabels(createInitialStint());
 
@@ -49,6 +70,34 @@ describe('domain models', () => {
     expect(missing).toContain('Stint: First name');
     expect(missing).toContain('Feeding 1: Time start');
     expect(missing).not.toContain('Stint: First_Name');
+  });
+
+  test('reports invalid stint dates and chronology', () => {
+    const base = {
+      ...createInitialStint(),
+      StintID: 'stint-1',
+      Island: 'Gettysburg',
+      Species: ['ARTE'],
+      First_Name: 'Huy',
+      Last_Name: 'Ngo',
+      Observer_Location: 'Plot 1',
+      Date_Time_Start: '02/30/2026 10:00',
+      Date_Time_End: '02/30/2026 09:00',
+    };
+
+    expect(getMissingFieldLabels(base)).toEqual(expect.arrayContaining([
+      'Stint: Start stint time must use MM/DD/YYYY HH:mm',
+      'Stint: End stint time must use MM/DD/YYYY HH:mm',
+    ]));
+
+    const validButReversed = {
+      ...base,
+      Date_Time_Start: '02/28/2026 10:00',
+      Date_Time_End: '02/28/2026 09:00',
+    };
+    expect(getMissingFieldLabels(validButReversed)).toContain(
+      'Stint: End stint time cannot be before start stint time'
+    );
   });
 
   test('reports friendly feeding validation labels', () => {

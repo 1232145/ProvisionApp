@@ -18,6 +18,7 @@ import {
   createInitialStint,
   getMissingFieldLabels,
   hasMeaningfulStintData,
+  isValidStintDateTime,
   normalizeStint,
 } from '../domain/models';
 import { parseConfigCsv, parseStintCsv, stintToCsv } from '../utils/csv';
@@ -146,7 +147,7 @@ function StintData() {
   }, []);
 
   const setTimeDepart = useCallback((time) => {
-    if (time && startTimeRef.current) {
+    if (time && startTimeRef.current && isValidStintDateTime(time) && isValidStintDateTime(startTimeRef.current)) {
       const start = moment(startTimeRef.current, 'MM/DD/YYYY HH:mm', true);
       const end = moment(time, 'MM/DD/YYYY HH:mm', true);
       if (start.isValid() && end.isValid() && end.isBefore(start)) {
@@ -367,7 +368,7 @@ function StintData() {
                   description="Now"
                   styles={styles}
                   hasDatePicker
-                  minDate={stint.Date_Time_Start ? moment(stint.Date_Time_Start, 'MM/DD/YYYY HH:mm') : null}
+                  minDate={stint.Date_Time_Start ? moment(stint.Date_Time_Start, 'MM/DD/YYYY HH:mm', true) : null}
                 />
               </Col>
             </Row>

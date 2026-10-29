@@ -20,7 +20,27 @@ function createWindow() {
       preload: path.join(__dirname, "preload.js"),
       nodeIntegration: false,
       contextIsolation: true,
+      sandbox: true,
     },
+  });
+
+  // Keep the packaged renderer on a strict local-only policy. This also
+  // removes Electron's warning about a missing Content-Security-Policy.
+  const contentSecurityPolicy = [
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob:",
+    "font-src 'self' data:",
+    "connect-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+  ].join('; ');
+  win.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    const responseHeaders = { ...(details.responseHeaders || {}) };
+    responseHeaders['Content-Security-Policy'] = [contentSecurityPolicy];
+    callback({ responseHeaders });
   });
 
   // Load the React app (build version)
@@ -134,11 +154,13 @@ ipcMain.handle("autosave", async (event, data) => {
 
   try {
     console.log("[autosave] write start", autoSaveFilePath);
+    const temporaryPath = `${autoSaveFilePath}.tmp`;
     await fs.promises.writeFile(
-      autoSaveFilePath,
+      temporaryPath,
       JSON.stringify(saveData, null, 2),
       "utf-8"
     );
+    await fs.promises.rename(temporaryPath, autoSaveFilePath);
 
     const lastModified = new Date().toISOString();
     console.log("[autosave] write success", lastModified);

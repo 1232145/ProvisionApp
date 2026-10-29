@@ -20,8 +20,9 @@ import {
     createEmptyFeeding,
     FEEDING_TIME_FORMAT,
     getFirstIncompleteFeedingIndex,
-    getFieldLabel,
+    getFilledFeedingFieldLabels,
     getMissingFeedingFieldLabels,
+    getNextFeedingId,
     normalizeFeeding,
 } from '../domain/models';
 import { feedingReducer } from '../domain/feedingReducer';
@@ -52,9 +53,9 @@ const defaultNests = ["P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9", "P10
  * @param {object|null} props.config - Config object containing dropdown options, or null if no config loaded
  * @returns {JSX.Element} The feeding data entry interface
  */
-function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onToggle, styles, config }) {
-    styles = {
-        ...styles,
+function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onToggle, styles: stylesProp, config }) {
+    const styles = {
+        ...stylesProp,
         outerContainer: {
             border: '1px solid #d9d9d9',
             margin: '10px clamp(8px, 2vw, 20px)',
@@ -210,8 +211,12 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
         feedingsRef.current = feedings;
     }, [feedings]);
 
-    // Completion status is local workflow state, not part of the CSV schema.
-    const [completedFeedingIds, setCompletedFeedingIds] = useState([]);
+    // Completion is persisted in the autosave object but intentionally omitted from CSV output.
+    const [completedFeedingIds, setCompletedFeedingIds] = useState(() => (
+        (Array.isArray(feedings) ? feedings : [])
+            .filter((item) => item?.Completed === true)
+            .map((item) => item.FeedingID)
+    ));
     const [showCompleted, setShowCompleted] = useState(true);
 
     /**
@@ -337,7 +342,7 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
      */
     const handleNewFeeding = useCallback(() => {
         const feedingsArray = Array.isArray(feedingsRef.current) ? feedingsRef.current : [];
-        const nextId = feedingsArray.length + 1;
+        const nextId = getNextFeedingId(feedingsArray);
         const newFeeding = createEmptyFeeding(nextId);
         
         setFeedings(prevFeedings => {
@@ -419,32 +424,16 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
     const handleDeleteFeeding = () => {
         const feedingsArray = Array.isArray(feedings) ? feedings : [];
         if (feedingsArray.length > 1) {
-            const ignore = ["FeedingID"];
-            const filled = [];
-
             const currentFeeding = feedingsArray[index];
             if (!currentFeeding) return; // Safety check
-
-            Object.entries(currentFeeding).forEach(([key, value]) => {
-                if (!ignore.includes(key)) {
-                    if (Array.isArray(value)) {
-                        value.forEach((item, i) => {
-                            Object.entries(item).forEach(([keyItem, field]) => {
-                                if (field !== "") {
-                                    filled.push(`Item ${i + 1} · ${getFieldLabel(keyItem)}`);
-                                }
-                            });
-                        });
-                    } else if (value !== "") {
-                        filled.push(getFieldLabel(key));
-                    }
-                }
-            });
+            const filled = getFilledFeedingFieldLabels(currentFeeding);
 
             const confirmDelete = () => {
                 const feedingsArray = Array.isArray(feedings) ? feedings : [];
+                const deletedFeedingId = currentFeeding.FeedingID;
                 const newData = feedingsArray.filter((item, i) => i !== index);
                 setFeedings(newData);
+                setCompletedFeedingIds((previous) => previous.filter((item) => item !== deletedFeedingId));
 
                 if (index === 0) {
                     handleOpenFeeding(0);
@@ -533,11 +522,16 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
 
         if (completedFeedingIds.includes(feedingId)) {
             setCompletedFeedingIds((previous) => previous.filter((item) => item !== feedingId));
+            setFeedings((previous) => previous.map((item, itemIndex) => (
+                itemIndex === feedingIndex ? { ...item, Completed: false } : item
+            )));
             message.info(`Feeding ${feedingIndex + 1} reopened for editing.`);
             return;
         }
 
-        const emptyFields = getMissingFeedingFieldLabels(feedingTemp);
+        const emptyFields = getMissingFeedingFieldLabels(
+            feedingIndex === index ? feeding : selectedFeeding
+        );
 
         if (emptyFields.length > 0) {
             Modal.warning({
@@ -555,6 +549,9 @@ function FeedingData({ initialFeeding, stint, feedings, setFeedings, isOpen, onT
         }
 
         setCompletedFeedingIds((previous) => [...previous, feedingId]);
+        setFeedings((previous) => previous.map((item, itemIndex) => (
+            itemIndex === feedingIndex ? { ...item, Completed: true } : item
+        )));
         message.success(`Feeding ${feedingIndex + 1} marked complete.`);
     };
 
